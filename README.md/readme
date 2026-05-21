@@ -1,0 +1,32 @@
+# UrbanMind
+
+Real-Time Big Data Platform for Urban Intelligence and Predictive Decision Support.
+
+## Objectives
+
+- Collect urban data
+- Process large-scale datasets
+- Generate AI predictions
+- Visualize insights
+
+## Tech Stack
+
+Frontend:
+React
+
+Backend:
+FastAPI
+
+Big Data:
+Spark
+Kafka
+
+Database:
+MongoDB
+
+Deployment:
+Docker
+
+## Project Status
+
+Phase 1 — Project Foundation
