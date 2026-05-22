@@ -62,3 +62,13 @@ tzdata==2026.2
 urllib3==2.6.3
 uvicorn==0.39.0
 zipp==3.23.1
+streamlit-autorefresh==1.0.1
+streamlit-authenticator==0.4.2
+streamlit-folium==0.25.3
+folium==0.20.0
+PyYAML==6.0.3
+bcrypt==5.0.0
+PyJWT==2.10.1
+extra-streamlit-components==0.1.81
+cryptography==46.0.3
+captcha==0.7.1

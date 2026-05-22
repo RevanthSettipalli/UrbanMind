@@ -1,26 +1,53 @@
-from kafka import KafkaConsumer
-import json
+import requests
+import pandas as pd
+import time
+import os
 
 
-consumer = KafkaConsumer(
-    "weather",
+API = "http://127.0.0.1:8000/weather"
 
-    bootstrap_servers=
-    "localhost:9092",
+FILE = "data/weather_history.csv"
 
-    value_deserializer=
-    lambda x:
-    json.loads(
-        x.decode()
-    )
-)
 
-print(
-"Listening..."
-)
+while True:
 
-for msg in consumer:
+    try:
 
-    print(
-        msg.value
-    )
+        response = requests.get(API)
+
+        data = response.json()
+
+        new_df = pd.DataFrame(data)
+
+        if os.path.exists(FILE):
+
+            try:
+                old_df = pd.read_csv(FILE)
+
+                final_df = pd.concat(
+                    [old_df, new_df],
+                    ignore_index=True
+                )
+
+            except:
+                final_df = new_df
+
+        else:
+
+            final_df = new_df
+
+
+        final_df.to_csv(
+            FILE,
+            index=False
+        )
+
+        print("Saved")
+
+
+    except Exception as e:
+
+        print("Error:", e)
+
+
+    time.sleep(5)

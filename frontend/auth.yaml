@@ -1,0 +1,25 @@
+credentials:
+  usernames:
+
+    admin:
+
+      email: admin@urbanmind.com
+
+      name: UrbanMind Admin
+
+      password: admin123
+
+
+cookie:
+
+  expiry_days: 30
+
+  key: urbanmind_key
+
+  name: urbanmind_cookie
+
+
+preauthorized:
+
+  emails:
+    - admin@urbanmind.com
