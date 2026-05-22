@@ -53,19 +53,25 @@ if auto:
 # ==================================
 # LOAD DATA
 # ==================================
+# ==================================
+# LOAD DATA
+# ==================================
 
-try:
-
-    df = pd.read_csv(
-        import os
+import os
 
 CSV = os.getenv(
     "CSV",
     "data/weather_history.csv"
 )
 
-df = pd.read_csv(CSV)
-    )
+MODEL = os.getenv(
+    "MODEL",
+    "models/weather/weather_model.pkl"
+)
+
+try:
+
+    df = pd.read_csv(CSV)
 
 except Exception as e:
 
@@ -78,13 +84,7 @@ except Exception as e:
 
 try:
 
-    model = joblib.load(
-        MODEL = os.getenv(
-    "MODEL"
-)
-
-model = joblib.load(MODEL)
-    )
+    model = joblib.load(MODEL)
 
 except Exception as e:
 
