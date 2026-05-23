@@ -205,6 +205,18 @@ http://localhost:8000/docs
 
 ---
 
+## 🌐 Live Demo
+
+Coming Soon
+
+Frontend:
+localhost:8502
+
+API:
+localhost:8000/docs
+
+---
+
 # ▶ Run Frontend
 
 ```bash
