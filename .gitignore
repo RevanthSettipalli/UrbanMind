@@ -5,3 +5,4 @@ __pycache__/
 .env
 models/
 *.pkldata/weather_history.csv
+data/weather_history.csv
