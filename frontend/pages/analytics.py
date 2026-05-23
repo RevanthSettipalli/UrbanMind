@@ -12,6 +12,13 @@ from utils.load_weather import load_weather
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
 
+from utils.settings import (
+    apply_theme,
+    load_settings,
+    export_data
+)
+
+
 # =================================
 # PAGE
 # =================================
@@ -26,14 +33,91 @@ require_login()
 
 render_sidebar()
 
+st.markdown(
+    apply_theme(),
+    unsafe_allow_html=True
+)
+
+settings = load_settings()
+
+
+# =================================
+# PREMIUM UI
+# =================================
+
+st.markdown("""
+<style>
+
+.block-container{
+padding-top:0.4rem !important;
+}
+
+.hero{
+padding:40px;
+
+border-radius:30px;
+
+background:
+linear-gradient(
+135deg,
+#04162a,
+#0b5c93
+);
+
+color:white;
+
+margin-bottom:24px;
+}
+
+.hero h1{
+font-size:50px;
+}
+
+.hero p{
+font-size:18px;
+opacity:.9;
+}
+
+[data-testid="metric-container"]{
+
+background:white;
+
+border-radius:22px;
+
+padding:24px;
+
+box-shadow:
+0 8px 25px
+rgba(0,0,0,.05);
+
+}
+
+.section{
+
+padding:22px;
+
+background:white;
+
+border-radius:22px;
+
+margin-bottom:22px;
+
+}
+
+</style>
+""",
+unsafe_allow_html=True)
+
+
 # =================================
 # REFRESH
 # =================================
 
 st_autorefresh(
-    interval=5000,
+    interval=settings["refresh"] * 1000,
     key="analytics"
 )
+
 
 # =================================
 # LOAD
@@ -48,6 +132,7 @@ if df.empty:
     )
 
     st.stop()
+
 
 # =================================
 # CLEAN
@@ -67,55 +152,43 @@ for c in required:
     if c not in df:
 
         df[c] = (
-
             "Unknown"
-
-            if c == "city"
-
+            if c=="city"
             else 0
-
         )
 
-df["time"] = pd.to_datetime(
+
+df["time"]=pd.to_datetime(
 df["time"],
 errors="coerce"
 )
 
-df["temperature"] = pd.to_numeric(
+df["temperature"]=pd.to_numeric(
 df["temperature"],
 errors="coerce"
 )
 
-df["humidity"] = pd.to_numeric(
+df["humidity"]=pd.to_numeric(
 df["humidity"],
 errors="coerce"
 )
 
-df = df.dropna()
+df=df.dropna()
 
-df = df.tail(
-3000
-)
+df=df.tail(3000)
 
-if len(df) == 0:
-
-    st.warning(
-        "No analytics records"
-    )
-
-    st.stop()
 
 # =================================
 # FILTER
 # =================================
 
-cities = sorted(
+cities=sorted(
 df["city"]
 .astype(str)
 .unique()
 )
 
-selected = st.selectbox(
+city=st.selectbox(
 
 "🏙 Select City",
 
@@ -127,41 +200,43 @@ cities
 
 )
 
-if selected != "All Cities":
+if city!="All Cities":
 
-    df = df[
+    df=df[
         df["city"]
         ==
-        selected
+        city
     ]
+
 
 # =================================
 # TIME
 # =================================
 
-IST = datetime.now(
-
+IST=datetime.now(
 pytz.timezone(
 "Asia/Kolkata"
 )
-
 )
+
 
 # =================================
 # SCORE
 # =================================
 
-avg_temp = round(
+avg_temp=round(
 df.temperature.mean(),
 1
 )
 
-avg_hum = round(
+avg_hum=round(
 df.humidity.mean(),
 1
 )
 
-urban = max(
+urban=int(
+
+max(
 
 70,
 
@@ -183,77 +258,87 @@ max(
 
 )
 
-urban = int(
-urban
 )
+
 
 # =================================
 # HEADER
 # =================================
 
-left,right = st.columns([4,1])
+left,right=st.columns([5,1])
 
 with left:
 
-    st.title(
-        "📊 Urban Analytics"
-    )
+    st.markdown("""
+<div class='hero'>
+
+<h1>
+📊 Urban Analytics
+</h1>
+
+<p>
+Advanced Intelligence • Ranking • Geo Analysis
+</p>
+
+</div>
+""",
+unsafe_allow_html=True
+)
 
 with right:
 
     st.info(
-        IST.strftime(
-            "%I:%M:%S %p"
-        )
-    )
+IST.strftime(
+"%I:%M:%S %p"
+)
+)
+
 
 # =================================
 # KPI
 # =================================
 
-a,b,c,d = st.columns(4)
+a,b,c,d=st.columns(4)
 
 a.metric(
-"Urban Score",
+"🏙 Urban Score",
 urban
 )
 
 b.metric(
-"Avg Temp",
+"🌡 Avg Temp",
 f"{avg_temp}°C"
 )
 
 c.metric(
-"Avg Humidity",
+"💧 Avg Humidity",
 f"{avg_hum}%"
 )
 
 d.metric(
-"Records",
+"📄 Records",
 len(df)
 )
+
 
 # =================================
 # HEALTH
 # =================================
 
 st.subheader(
-"🖥 System Health"
+"🩺 Urban Health"
 )
 
 st.progress(
 urban/100
 )
 
-st.success(
-f"Health • {urban}%"
-)
 
 # =================================
-# RANKING
+# RANK
 # =================================
 
-rank = (
+rank=(
 
 df
 
@@ -275,33 +360,24 @@ df
 
 )
 
-rank["score"] = (
-
+rank["score"]=(
 100
-
 -
-
 abs(
-
-rank[
-"temperature"
-]
-
+rank["temperature"]
 -
-
 30
-
+)
 )
 
-)
-
-rank = rank.sort_values(
+rank=rank.sort_values(
 "score",
 ascending=False
 )
 
+
 st.subheader(
-"🏆 Urban Ranking"
+"🏆 City Ranking"
 )
 
 st.dataframe(
@@ -309,11 +385,12 @@ rank,
 use_container_width=True
 )
 
+
 # =================================
 # MAP
 # =================================
 
-coords = {
+coords={
 
 "Delhi":[28.61,77.20],
 "Mumbai":[19.07,72.87],
@@ -328,7 +405,7 @@ st.subheader(
 "🗺 Urban Heat Map"
 )
 
-m = folium.Map(
+m=folium.Map(
 
 location=[
 21,
@@ -350,7 +427,13 @@ coords[
 r["city"]
 ],
 
-radius=12,
+radius=16,
+
+fill=True,
+
+fill_opacity=.8,
+
+color="red",
 
 popup=
 f"""
@@ -358,39 +441,29 @@ f"""
 
 Score:
 {r["score"]:.0f}
-""",
-
-fill=True,
-
-fill_opacity=0.8,
-
-color="red"
+"""
 
 ).add_to(
 m
 )
 
 st_folium(
-
 m,
-
-height=420,
-
-key="analytics_map"
-
+height=450
 )
+
 
 # =================================
 # TREND
 # =================================
 
 st.subheader(
-"📈 Trend"
+"📈 Trend Analysis"
 )
 
-fig = px.line(
+fig=px.area(
 
-df.tail(150),
+df.tail(200),
 
 x="time",
 
@@ -405,7 +478,7 @@ y=[
 )
 
 fig.update_layout(
-height=450
+height=500
 )
 
 st.plotly_chart(
@@ -413,21 +486,22 @@ fig,
 use_container_width=True
 )
 
+
 # =================================
-# AI
+# INSIGHT
 # =================================
 
 st.subheader(
 "🧠 AI Insight"
 )
 
-if avg_temp > 40:
+if avg_temp>40:
 
     st.error(
         "Heat Risk Increasing"
     )
 
-elif avg_hum > 80:
+elif avg_hum>80:
 
     st.warning(
         "Humidity Rising"
@@ -436,41 +510,44 @@ elif avg_hum > 80:
 else:
 
     st.success(
-        "Urban Stable"
+        "Urban Conditions Stable"
     )
+
 
 # =================================
 # EXPORT
 # =================================
 
+file, mime, ext = export_data(
+    df
+)
+
 st.download_button(
 
-"⬇ Export Analytics",
+    "⬇ Export Analytics",
 
-df.to_csv(
-index=False
-).encode(),
+    file,
 
-"urbanmind_analytics.csv"
+    f"urbanmind_analytics{ext}",
 
+    mime,
+
+    use_container_width=True
 )
+
 
 # =================================
 # SUMMARY
 # =================================
 
-st.success(
+st.markdown(
 f"""
-Urban Score:
-{urban}
+### 📌 Analytics Summary
 
-Records:
-{len(df)}
+- Urban Score → {urban}
+- Records → {len(df)}
+- Avg Temp → {avg_temp}°C
+- Avg Humidity → {avg_hum}%
 
-Temperature:
-{avg_temp}°C
-
-Humidity:
-{avg_hum}%
 """
 )

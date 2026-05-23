@@ -3,18 +3,25 @@ import streamlit as st
 
 def render_sidebar():
 
+    current = st.session_state.get(
+        "current_page",
+        ""
+    )
+
     st.markdown("""
 <style>
 
-/* MAIN PAGE */
+/* MAIN */
 .block-container{
-padding-top:0.4rem !important;
+padding-top:.15rem!important;
+padding-left:2rem!important;
+padding-right:2rem!important;
 }
 
 
-/* REMOVE DEFAULT NAV */
+/* REMOVE STREAMLIT NAV */
 [data-testid="stSidebarNav"]{
-display:none;
+display:none!important;
 }
 
 
@@ -25,59 +32,59 @@ section[data-testid="stSidebar"]{
 background:
 linear-gradient(
 180deg,
-#021122,
-#082d61
+#031120,
+#0a3168
 );
 
-padding-top:0rem !important;
-
-width:300px !important;
+width:300px!important;
 
 }
 
 
-/* SIDEBAR CONTENT */
+/* CONTENT */
 
 [data-testid="stSidebarContent"]{
 
-padding-top:0rem !important;
+padding-top:0rem!important;
 
-padding-left:18px;
+padding-left:20px;
 
-padding-right:18px;
+padding-right:20px;
 
 }
 
 
-/* MOVE HEADER UP */
+/* MOVE TOP */
 
 .sidebar-content{
 
-margin-top:-45px;
+margin-top:-78px;
 
 }
 
 
-/* BRAND */
+/* LOGO */
 
 .logo{
 
-font-size:34px;
+font-size:40px;
 
-font-weight:800;
+font-weight:900;
 
 color:white;
 
-margin-bottom:2px;
-
 line-height:1;
+
+margin-bottom:4px;
 
 }
 
 
+/* SUB */
+
 .sub{
 
-color:#9cb5d6;
+color:#b8c7dc;
 
 font-size:15px;
 
@@ -100,11 +107,11 @@ rgba(
 
 padding:22px;
 
-border-radius:20px;
-
-margin-bottom:30px;
+border-radius:24px;
 
 color:white;
+
+margin-bottom:28px;
 
 line-height:2;
 
@@ -115,26 +122,28 @@ line-height:2;
 
 .nav{
 
-color:#8ea6c8;
-
 font-size:12px;
 
-font-weight:700;
+letter-spacing:4px;
 
-letter-spacing:3px;
+color:#86a5cc;
 
-margin-bottom:10px;
+font-weight:800;
+
+margin-bottom:12px;
 
 }
 
 
-/* BUTTONS */
+/* BUTTON */
 
-.stButton button{
+.stButton>button{
 
 width:100%;
 
-height:58px;
+height:54px;
+
+border:none;
 
 border-radius:18px;
 
@@ -142,35 +151,50 @@ background:white;
 
 color:#172033;
 
-font-size:18px;
+font-size:17px;
 
 font-weight:700;
 
-border:none;
+margin-bottom:10px;
 
-margin-bottom:12px;
+transition:.25s;
 
-transition:0.2s;
+box-shadow:
+0 10px 20px
+rgba(
+0,
+0,
+0,
+0.08
+);
 
 }
 
 
-.stButton button:hover{
+/* HOVER */
 
-background:#eef5ff;
+.stButton>button:hover{
 
-transform:translateY(-2px);
+background:#edf4ff;
+
+transform:
+translateY(-2px);
 
 }
 
 
 /* LOGOUT */
 
-.logout button{
+.logout .stButton>button{
 
-background:#ef4444 !important;
+background:
+linear-gradient(
+90deg,
+#ef4444,
+#dc2626
+)!important;
 
-color:white !important;
+color:white!important;
 
 }
 
@@ -179,15 +203,23 @@ color:white !important;
 
 .footer{
 
-color:#7e9bc2;
+padding-top:18px;
 
 text-align:center;
 
-padding-top:18px;
-
 font-size:12px;
 
-opacity:0.7;
+color:#7f9bc0;
+
+opacity:.8;
+
+}
+
+.footer2{
+
+font-size:11px;
+
+opacity:.55;
 
 }
 
@@ -204,37 +236,38 @@ unsafe_allow_html=True
         )
 
         username = (
+
             user.get(
                 "username",
-                "admin"
+                "Admin"
             )
+
             if isinstance(
                 user,
                 dict
             )
-            else "admin"
+
+            else "Admin"
+
         )
 
         st.markdown(
-"""
-<div class="sidebar-content">
-
-<div class="logo">
-🌍 UrbanMind
-</div>
-
-<div class="sub">
-Smart City Intelligence
-</div>
-
-</div>
-""",
-unsafe_allow_html=True
-)
-
-        st.markdown(
 f"""
-<div class="user">
+<div class='sidebar-content'>
+
+<div class='logo'>
+
+🌍 UrbanMind
+
+</div>
+
+<div class='sub'>
+
+Smart City Intelligence
+
+</div>
+
+<div class='user'>
 
 👤 <b>{username}</b>
 
@@ -243,15 +276,12 @@ f"""
 🟢 Online
 
 </div>
-""",
-unsafe_allow_html=True
-)
 
-        st.markdown(
-"""
-<div class="nav">
+<div class='nav'>
 
 NAVIGATION
+
+</div>
 
 </div>
 """,
@@ -268,7 +298,13 @@ unsafe_allow_html=True
 
 ("🌍 Geo","pages/geo.py"),
 
-("🖥 Monitor","pages/monitor.py")
+("🖥 Monitor","pages/monitor.py"),
+
+("🤖 Assistant","pages/assistant.py"),
+
+("⚙️ Settings","pages/settings.py"),
+
+("ℹ️ About","pages/about.py")
 
 ]
 
@@ -284,7 +320,7 @@ unsafe_allow_html=True
                 )
 
         st.markdown(
-"<div class='logout'>",
+'<div class="logout">',
 unsafe_allow_html=True
 )
 
@@ -304,11 +340,16 @@ unsafe_allow_html=True
 unsafe_allow_html=True
 )
 
-        st.markdown(
-"""
-<div class="footer">
+        st.markdown("""
+<div class='footer'>
 
-UrbanMind v1.0
+UrbanMind v2.0
+
+<div class='footer2'>
+
+AI • Big Data • Smart Cities
+
+</div>
 
 </div>
 """,

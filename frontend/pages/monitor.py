@@ -1,3 +1,4 @@
+from streamlit_autorefresh import st_autorefresh
 import streamlit as st
 import pandas as pd
 import joblib
@@ -7,16 +8,20 @@ import time
 
 from pathlib import Path
 from datetime import datetime
-from streamlit_autorefresh import st_autorefresh
 
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
 
+from utils.settings import (
+    apply_theme,
+    load_settings,
+    export_data
+)
 
 try:
     import psutil
 except:
-    psutil = None
+    psutil=None
 
 
 # =====================================
@@ -33,40 +38,70 @@ require_login()
 
 render_sidebar()
 
+settings=load_settings()
+
+st.markdown(
+    apply_theme(),
+    unsafe_allow_html=True
+)
+
 st_autorefresh(
-    interval=5000,
+    interval=settings["refresh"]*1000,
     key="monitor_refresh"
 )
+
+
+# =====================================
+# UI
+# =====================================
+
+st.markdown("""
+<style>
+
+.block-container{
+padding-top:.4rem;
+}
+
+.hero{
+padding:40px;
+
+border-radius:30px;
+
+background:
+linear-gradient(
+135deg,
+#06111c,
+#0f4c81
+);
+
+color:white;
+
+margin-bottom:25px;
+}
+
+.hero h1{
+font-size:48px;
+}
+
+[data-testid="metric-container"]{
+padding:24px;
+border-radius:20px;
+}
+
+</style>
+""",
+unsafe_allow_html=True)
 
 
 # =====================================
 # PATH
 # =====================================
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT=Path(__file__).resolve().parents[2]
 
-CSV = ROOT / "data" / "weather_history.csv"
+CSV=ROOT/"data"/"weather_history.csv"
 
-MODEL = ROOT / "models" / "weather" / "weather_model.pkl"
-
-
-# =====================================
-# HEADER
-# =====================================
-
-st.title(
-    "🖥 Urban Monitor Center"
-)
-
-IST = datetime.now(
-    pytz.timezone(
-        "Asia/Kolkata"
-    )
-)
-
-st.caption(
-    f"Updated • {IST.strftime('%d %b %Y | %I:%M:%S %p IST')}"
-)
+MODEL=ROOT/"models"/"weather"/"weather_model.pkl"
 
 
 # =====================================
@@ -74,22 +109,20 @@ st.caption(
 # =====================================
 
 @st.cache_data(ttl=5)
-def load_data():
+def load():
 
     try:
-
         return pd.read_csv(
             CSV,
             on_bad_lines="skip"
         )
 
     except:
-
         return pd.DataFrame()
 
 
 @st.cache_resource
-def model_exists():
+def model_loaded():
 
     try:
 
@@ -104,102 +137,107 @@ def model_exists():
         return False
 
 
-df = load_data()
+df=load()
 
-model = model_exists()
+model=model_loaded()
 
-records = len(df)
+if df.empty:
+
+    st.warning(
+        "Waiting for Data..."
+    )
+
+    st.stop()
 
 
 # =====================================
 # CLEAN
 # =====================================
 
-if records:
+if "time" in df:
 
-    if "time" in df.columns:
+    df["time"]=pd.to_datetime(
+        df["time"],
+        errors="coerce"
+    )
 
-        df["time"] = pd.to_datetime(
-            df["time"],
-            errors="coerce"
-        )
+df=df.dropna()
 
-    if "temperature" in df.columns:
-
-        df["temperature"] = pd.to_numeric(
-            df["temperature"],
-            errors="coerce"
-        )
-
-    if "humidity" in df.columns:
-
-        df["humidity"] = pd.to_numeric(
-            df["humidity"],
-            errors="coerce"
-        )
-
-    df = df.dropna()
-
-    records = len(df)
+records=len(df)
 
 
 # =====================================
 # SYSTEM
 # =====================================
 
-cpu = (
-
+cpu=(
 psutil.cpu_percent()
-
 if psutil
-
 else 0
-
 )
 
-ram = (
-
+ram=(
 psutil.virtual_memory().percent
-
 if psutil
-
 else 0
-
 )
 
-uptime = round(
+uptime=round(
 time.time()/3600,
 1
 )
 
-confidence = min(
+confidence=min(
 98,
+70+(records//100)
+)
+
+health=int(
+
 max(
-65,
-65 + (records // 100)
-)
-)
-
-health = max(
-
 0,
-
-round(
-
-100
-
--
-
-(
-
-cpu*0.3
-
-+
-
-ram*0.2
+100-(cpu*.3+ram*.2)
+)
 
 )
 
+
+# =====================================
+# HEADER
+# =====================================
+
+left,right=st.columns([5,1])
+
+with left:
+
+    st.markdown("""
+<div class='hero'>
+
+<h1>
+🖥 Monitor Center
+</h1>
+
+<p>
+Operations • System Health • AI Monitoring
+</p>
+
+</div>
+""",
+unsafe_allow_html=True
+)
+
+with right:
+
+    st.info(
+
+datetime.now(
+
+pytz.timezone(
+"Asia/Kolkata"
+)
+
+).strftime(
+"%I:%M:%S %p"
 )
 
 )
@@ -209,25 +247,25 @@ ram*0.2
 # KPI
 # =====================================
 
-a,b,c,d,e,f = st.columns(6)
+a,b,c,d,e,f=st.columns(6)
 
 a.metric(
-"CPU",
+"🧠 CPU",
 f"{cpu}%"
 )
 
 b.metric(
-"RAM",
+"💾 RAM",
 f"{ram}%"
 )
 
 c.metric(
-"Records",
+"📄 Records",
 records
 )
 
 d.metric(
-"Model",
+"🤖 Model",
 "Loaded"
 if model
 else
@@ -235,13 +273,13 @@ else
 )
 
 e.metric(
-"Confidence",
+"🎯 Confidence",
 f"{confidence}%"
 )
 
 f.metric(
-"Uptime",
-f"{uptime} h"
+"⏱ Uptime",
+f"{uptime}h"
 )
 
 
@@ -270,48 +308,40 @@ st.subheader(
 "🧩 Services"
 )
 
-x,y,z = st.columns(3)
+x,y,z=st.columns(3)
 
-with x:
+x.success(
+"🟢 Producer"
+)
 
-    st.success(
-        "🟢 Producer"
+y.success(
+"🟢 Dashboard"
+)
+
+if model:
+
+    z.success(
+        "🟢 AI Running"
     )
 
-with y:
+else:
 
-    st.success(
-        "🟢 Dashboard"
+    z.error(
+        "🔴 Model Missing"
     )
-
-with z:
-
-    if model:
-
-        st.success(
-            "🤖 AI Running"
-        )
-
-    else:
-
-        st.error(
-            "❌ Model Missing"
-        )
 
 
 # =====================================
-# DATASET
+# GROWTH
 # =====================================
 
-if records:
+st.subheader(
+"📈 Dataset Growth"
+)
 
-    st.subheader(
-        "📈 Dataset Growth"
-    )
+fig=go.Figure()
 
-    fig = go.Figure()
-
-    fig.add_trace(
+fig.add_trace(
 
 go.Scatter(
 
@@ -323,53 +353,35 @@ y=list(
 range(records)
 ),
 
-mode="lines"
+fill="tozeroy"
 
 )
 
 )
 
-    fig.update_layout(
-        height=320
-    )
-
-    st.plotly_chart(
-        fig,
-        use_container_width=True
-    )
+st.plotly_chart(
+fig,
+use_container_width=True
+)
 
 
 # =====================================
 # WEATHER
 # =====================================
 
-if (
-
-records
-
-and
-
-{
+if {
 
 "time",
-
 "temperature",
-
 "humidity"
 
 }.issubset(
 df.columns
-)
-
 ):
 
-    st.subheader(
-        "🌡 Live Weather"
-    )
+    sample=df.tail(100)
 
-    sample = df.tail(100)
-
-    fig2 = go.Figure()
+    fig2=go.Figure()
 
     fig2.add_trace(
 
@@ -399,10 +411,6 @@ name="Humidity"
 
 )
 
-    fig2.update_layout(
-        height=420
-    )
-
     st.plotly_chart(
         fig2,
         use_container_width=True
@@ -413,20 +421,13 @@ name="Humidity"
 # DATA
 # =====================================
 
-if records:
+st.subheader(
+"📄 Recent Records"
+)
 
-    st.subheader(
-        "📄 Recent Records"
-    )
-
-    st.dataframe(
-
-df.tail(
-20
-),
-
+st.dataframe(
+df.tail(20),
 use_container_width=True
-
 )
 
 
@@ -434,17 +435,23 @@ use_container_width=True
 # EXPORT
 # =====================================
 
-if records:
+st.subheader(
+"⬇ Export Monitor"
+)
 
-    st.download_button(
+file,mime,ext=export_data(
+df
+)
 
-"⬇ Export Monitor Report",
+st.download_button(
 
-df.to_csv(
-index=False
-).encode(),
+"Download Report",
 
-"urbanmind_monitor.csv",
+file,
+
+f"urbanmind_monitor{ext}",
+
+mime,
 
 use_container_width=True
 
@@ -455,24 +462,16 @@ use_container_width=True
 # SUMMARY
 # =====================================
 
-st.success(
-f"""
-CPU:
-{cpu}%
+st.success(f"""
+CPU: {cpu}%
 
-RAM:
-{ram}%
+RAM: {ram}%
 
-Health:
-{health}%
+Records: {records}
 
-Records:
-{records}
+Health: {health}%
 
-Confidence:
-{confidence}%
+Export: {settings["export"]}
 
-Model:
-{"Loaded" if model else "Missing"}
-"""
-)
+Theme: {settings["theme"]}
+""")

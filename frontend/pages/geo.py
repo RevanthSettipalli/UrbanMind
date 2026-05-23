@@ -1,3 +1,4 @@
+from streamlit_autorefresh import st_autorefresh
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -7,11 +8,15 @@ import pytz
 from pathlib import Path
 from datetime import datetime
 from streamlit_folium import st_folium
-from streamlit_autorefresh import st_autorefresh
 
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
 
+from utils.settings import (
+    apply_theme,
+    load_settings,
+    export_data
+)
 
 # ==================================
 # PAGE
@@ -27,11 +32,62 @@ require_login()
 
 render_sidebar()
 
+settings = load_settings()
+
+st.markdown(
+    apply_theme(),
+    unsafe_allow_html=True
+)
+
 st_autorefresh(
-    interval=5000,
+    interval=settings["refresh"] * 1000,
     key="geo_refresh"
 )
 
+# ==================================
+# UI
+# ==================================
+
+st.markdown("""
+<style>
+
+.block-container{
+padding-top:.4rem !important;
+}
+
+.hero{
+padding:40px;
+
+border-radius:30px;
+
+background:
+linear-gradient(
+135deg,
+#03283c,
+#0096c7
+);
+
+color:white;
+
+margin-bottom:24px;
+}
+
+.hero h1{
+font-size:48px;
+}
+
+.hero p{
+font-size:18px;
+}
+
+[data-testid="metric-container"]{
+padding:24px;
+border-radius:20px;
+}
+
+</style>
+""",
+unsafe_allow_html=True)
 
 # ==================================
 # PATH
@@ -40,11 +96,6 @@ st_autorefresh(
 ROOT = Path(__file__).resolve().parents[2]
 
 CSV = ROOT / "data" / "weather_history.csv"
-
-
-# ==================================
-# CITY MAP
-# ==================================
 
 CITY = {
 
@@ -57,7 +108,6 @@ CITY = {
 
 }
 
-
 # ==================================
 # LOAD
 # ==================================
@@ -66,14 +116,12 @@ CITY = {
 def load():
 
     try:
-
         return pd.read_csv(
             CSV,
             on_bad_lines="skip"
         )
 
     except:
-
         return pd.DataFrame()
 
 
@@ -82,93 +130,79 @@ df = load()
 if df.empty:
 
     st.warning(
-        "Waiting for stream..."
+        "Waiting for Geo Stream..."
     )
 
     st.stop()
-
 
 # ==================================
 # CLEAN
 # ==================================
 
-for col in [
-
+for c in [
 "time",
 "temperature",
 "humidity"
-
 ]:
 
-    if col not in df.columns:
-        df[col] = 0
+    if c not in df:
+        df[c]=0
 
+if "city" not in df:
+    df["city"]="Unknown"
 
-if "city" not in df.columns:
-    df["city"] = "Unknown"
-
-
-df["time"] = pd.to_datetime(
+df["time"]=pd.to_datetime(
     df["time"],
     errors="coerce"
 )
 
-df["temperature"] = pd.to_numeric(
+df["temperature"]=pd.to_numeric(
     df["temperature"],
     errors="coerce"
 )
 
-df["humidity"] = pd.to_numeric(
+df["humidity"]=pd.to_numeric(
     df["humidity"],
     errors="coerce"
 )
 
-df = df.dropna()
+df=df.dropna()
 
-df = df.tail(500)
-
+df=df.tail(600)
 
 # ==================================
 # FILTER
 # ==================================
 
-cities = sorted(
-    df["city"]
-    .astype(str)
-    .unique()
+city=st.selectbox(
+"🏙 Select City",
+
+["All Cities"]
+
++
+
+sorted(
+df["city"]
+.astype(str)
+.unique()
+)
 )
 
-selected = st.selectbox(
+if city!="All Cities":
 
-    "🏙 Select City",
-
-    ["All Cities"]
-
-    +
-
-    cities
-
-)
-
-if selected != "All Cities":
-
-    df = df[
-        df["city"]
-        ==
-        selected
+    df=df[
+        df["city"]==city
     ]
 
-
-if len(df) == 0:
+if len(df)==0:
 
     st.warning(
-        "No geo records"
+        "No city records"
     )
 
     st.stop()
 
-
-latest = (
+latest=(
 
 df
 
@@ -184,84 +218,73 @@ df
 
 )
 
-
 # ==================================
-# HEALTH
+# SCORE
 # ==================================
 
-latest["health"] = (
-
+latest["health"]=(
 100
-
 -
-
 (
 latest["temperature"]
--
-30
+-30
 )
-
 .clip(0)
-
 *2
-
 -
-
 (
 latest["humidity"]
--
-70
+-70
 )
-
 .clip(0)
-
 )
 
-latest["health"] = (
-
-latest["health"]
-
-.clip(
+latest["health"]=latest[
+"health"
+].clip(
 0,
 100
 )
 
-.round()
-
+avg=float(
+latest.health.mean()
 )
-
 
 # ==================================
 # HEADER
 # ==================================
 
-left,right=st.columns([4,1])
+left,right=st.columns([5,1])
 
 with left:
 
-    st.title(
-        "🌍 Geo Intelligence"
-    )
+    st.markdown("""
+<div class='hero'>
 
-    st.caption(
-        "Urban Digital Twin • Risk Zones"
-    )
+<h1>
+🌍 Geo Intelligence
+</h1>
+
+<p>
+Urban Digital Twin • Risk Zones
+</p>
+
+</div>
+""",
+unsafe_allow_html=True
+)
 
 with right:
 
     st.info(
-
 datetime.now(
-
 pytz.timezone(
-"Asia/Kolkata")
-
+"Asia/Kolkata"
+)
 ).strftime(
 "%I:%M:%S %p"
 )
-
 )
-
 
 # ==================================
 # KPI
@@ -270,40 +293,36 @@ pytz.timezone(
 a,b,c,d=st.columns(4)
 
 a.metric(
-"Cities",
+"🏙 Cities",
 latest.city.nunique()
 )
 
 b.metric(
-"Avg Temp",
+"🌡 Avg Temp",
 f"{latest.temperature.mean():.1f}°C"
 )
 
 c.metric(
-"Avg Humidity",
+"💧 Avg Humidity",
 f"{latest.humidity.mean():.1f}%"
 )
 
 d.metric(
-"Urban Health",
-f"{latest.health.mean():.0f}%"
+"❤️ Health",
+f"{avg:.0f}%"
 )
-
 
 # ==================================
 # MAP
 # ==================================
 
 st.subheader(
-"🗺 Geo Digital Twin"
+"🗺 Geo Map"
 )
 
-m = folium.Map(
-
+m=folium.Map(
 location=[21,79],
-
 zoom_start=5
-
 )
 
 for _,r in latest.iterrows():
@@ -311,21 +330,13 @@ for _,r in latest.iterrows():
     if r["city"] in CITY:
 
         color=(
-
 "green"
-
-if r["temperature"]<30
-
+if r["health"]>80
 else
-
 "orange"
-
-if r["temperature"]<36
-
+if r["health"]>60
 else
-
 "red"
-
 )
 
         folium.CircleMarker(
@@ -339,7 +350,7 @@ radius=18,
 
 fill=True,
 
-fill_opacity=0.8,
+fill_opacity=.8,
 
 color=color,
 
@@ -347,11 +358,8 @@ popup=
 f"""
 {r["city"]}
 
-🌡 {r["temperature"]:.1f}°C
-
-💧 {r["humidity"]:.1f}%
-
-❤️ {r["health"]:.0f}
+Health:
+{r["health"]:.0f}
 """
 
 ).add_to(
@@ -360,58 +368,36 @@ m
 
 st_folium(
 m,
-height=550,
-key="geo_map"
+height=600
 )
 
-
 # ==================================
-# RANK
+# TABLE
 # ==================================
 
-st.subheader(
-"🏆 City Ranking"
-)
-
-rank = latest.sort_values(
+rank=latest.sort_values(
 "health",
 ascending=False
 )
 
-st.dataframe(
-
-rank[[
-
-"city",
-"temperature",
-"humidity",
-"health"
-
-]],
-
-use_container_width=True
-
-)
-
-
-# ==================================
-# CHARTS
-# ==================================
-
 st.subheader(
-"🔥 Temperature Zones"
+"🏆 Ranking"
 )
 
-fig = px.bar(
-
+st.dataframe(
 rank,
+use_container_width=True
+)
 
+# ==================================
+# CHART
+# ==================================
+
+fig=px.bar(
+rank,
 x="city",
-
-y="temperature",
-
-color="temperature"
-
+y="health",
+color="health"
 )
 
 st.plotly_chart(
@@ -419,90 +405,59 @@ fig,
 use_container_width=True
 )
 
-
-st.subheader(
-"💧 Humidity Zones"
-)
-
-fig2 = px.line(
-
-rank,
-
-x="city",
-
-y="humidity",
-
-markers=True
-
-)
-
-st.plotly_chart(
-fig2,
-use_container_width=True
-)
-
-
 # ==================================
 # AI
 # ==================================
 
 st.subheader(
-"🧠 Geo AI Insight"
+"🧠 Geo Insight"
 )
 
-avg = rank[
-"health"
-].mean()
-
-if avg < 60:
+if avg<60:
 
     st.error(
-        "Heat Risk Increasing"
+        "High Urban Risk"
     )
 
-elif avg < 80:
+elif avg<80:
 
     st.warning(
-        "Moderate Urban Risk"
+        "Moderate Risk"
     )
 
 else:
 
     st.success(
-        "Stable Conditions"
+        "Stable Urban Conditions"
     )
-
 
 # ==================================
 # EXPORT
 # ==================================
 
-st.download_button(
-
-"⬇ Export Geo Report",
-
-rank.to_csv(
-index=False
-).encode(),
-
-"urbanmind_geo.csv"
-
+st.subheader(
+"⬇ Export Geo"
 )
 
+file,mime,ext=export_data(
+rank
+)
+
+st.download_button(
+"Download Geo Report",
+file,
+f"urbanmind_geo{ext}",
+mime,
+use_container_width=True
+)
 
 # ==================================
 # SUMMARY
 # ==================================
 
-st.success(
-f"""
-Cities:
-{rank.city.nunique()}
-
-Average Health:
-{avg:.0f}
-
-Last Update:
-{datetime.now().strftime('%I:%M:%S %p')}
-"""
-)
+st.success(f"""
+Cities: {rank.city.nunique()}
+Health: {avg:.0f}%
+Export: {settings["export"]}
+Theme: {settings["theme"]}
+""")
