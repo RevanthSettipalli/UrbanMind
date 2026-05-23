@@ -3,12 +3,15 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import joblib
-import numpy as np
 import pytz
 import sys
 
+from backend.intelligence.forecast_engine import (
+    generate_forecast
+)
+
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
@@ -17,6 +20,7 @@ from utils.settings import (
     load_settings,
     export_data
 )
+
 
 # =================================
 # PAGE
@@ -40,12 +44,16 @@ st.markdown(
 )
 
 st_autorefresh(
-    interval=settings.get("refresh", 10) * 1000,
-    key="forecast_refresh"
+    interval=settings.get(
+        "refresh",
+        10
+    ) * 1000,
+    key="forecast"
 )
 
+
 # =================================
-# UI
+# STYLE
 # =================================
 
 st.markdown("""
@@ -56,7 +64,8 @@ padding-top:.4rem !important;
 }
 
 .hero{
-padding:40px;
+padding:35px;
+
 border-radius:30px;
 
 background:
@@ -67,27 +76,33 @@ linear-gradient(
 );
 
 color:white;
-margin-bottom:24px;
+
+margin-bottom:25px;
 }
 
 .hero h1{
-font-size:48px;
+font-size:52px;
+margin:0;
 }
 
-.hero p{
-font-size:18px;
-opacity:.9;
-}
+.card{
 
-[data-testid="metric-container"]{
+padding:20px;
+
 background:white;
-padding:24px;
-border-radius:22px;
+
+border-radius:20px;
+
+box-shadow:
+0 10px 30px
+rgba(0,0,0,.05);
+
 }
 
 </style>
 """,
 unsafe_allow_html=True)
+
 
 # =================================
 # ROOT
@@ -98,12 +113,15 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-CSV = ROOT / "data" / "weather_history.csv"
-MODEL = ROOT / "models" / "weather" / "weather_model.pkl"
+CSV = ROOT/"data"/"weather_history.csv"
+MODEL = ROOT/"models"/"weather"/"weather_model.pkl"
 
 IST = datetime.now(
-    pytz.timezone("Asia/Kolkata")
+    pytz.timezone(
+        "Asia/Kolkata"
+    )
 )
+
 
 # =================================
 # LOAD
@@ -126,30 +144,29 @@ def load():
 def load_model():
 
     try:
-        return joblib.load(MODEL)
+        return joblib.load(
+            MODEL
+        )
 
     except:
         return None
 
 
-df = load()
-model = load_model()
+df=load()
+model=load_model()
 
 if df.empty:
-    st.warning("Weather dataset missing")
+
+    st.warning(
+        "Waiting for Forecast Data..."
+    )
+
     st.stop()
+
 
 # =================================
 # CLEAN
 # =================================
-
-for c in [
-"time",
-"temperature",
-"humidity"
-]:
-    if c not in df:
-        df[c]=0
 
 df["time"]=pd.to_datetime(
     df["time"],
@@ -168,6 +185,7 @@ df["humidity"]=pd.to_numeric(
 
 df=df.dropna()
 
+
 # =================================
 # FILTER
 # =================================
@@ -175,136 +193,87 @@ df=df.dropna()
 if "city" in df.columns:
 
     city=st.selectbox(
+
         "🏙 Select City",
+
         ["All Cities"]
+
         +
+
         sorted(
             df["city"]
-            .astype(str)
             .unique()
         )
+
     )
 
     if city!="All Cities":
 
         df=df[
-            df["city"]==city
+            df["city"]
+            ==
+            city
         ]
 
-if len(df)==0:
-    st.warning("No forecast data")
-    st.stop()
 
 latest=df.iloc[-1]
 
-base_temp=float(
-    latest["temperature"]
-)
-
-base_hum=float(
-    latest["humidity"]
-)
-
-avg_temp=df[
-    "temperature"
-].tail(50).mean()
 
 # =================================
 # FORECAST
 # =================================
 
-future=[]
+forecast=generate_forecast(
 
-for i in range(1,25):
+latest["temperature"],
 
-    t=IST+timedelta(
-        hours=i
-    )
+latest["humidity"],
 
-    hum=np.clip(
-        base_hum+
-        np.random.normal(0,2),
-        40,
-        85
-    )
+24
 
-    try:
-
-        pred=float(
-
-            model.predict([[
-
-                hum,
-                t.hour,
-                t.day,
-                t.month,
-                base_temp,
-                avg_temp
-
-            ]])[0]
-
-        )
-
-    except:
-
-        pred=(
-            base_temp+
-            np.random.normal(0,1)
-        )
-
-    pred=np.clip(
-        pred,
-        20,
-        46
-    )
-
-    conf=max(
-        80,
-        98-abs(
-            pred-avg_temp
-        )
-    )
-
-    future.append([
-        t,
-        round(pred,1),
-        round(hum,1),
-        round(conf)
-    ])
-
-forecast=pd.DataFrame(
-    future,
-    columns=[
-        "time",
-        "temperature",
-        "humidity",
-        "confidence"
-    ]
 )
 
-# =================================
-# KPI
-# =================================
+forecast=pd.DataFrame(
+forecast
+)
 
-peak=forecast.temperature.max()
+
+peak=float(
+forecast.temperature.max()
+)
 
 confidence=int(
 forecast.confidence.mean()
 )
 
-risk=min(
-100,
-int(peak*2.2)
-)
+risk="Safe"
+
+if peak>42:
+
+    risk="Extreme"
+
+elif peak>36:
+
+    risk="Moderate"
+
+
+# =================================
+# HERO
+# =================================
 
 left,right=st.columns([5,1])
 
 with left:
 
-    st.markdown("""
+    st.markdown(f"""
 <div class='hero'>
+
 <h1>🔮 Forecast Intelligence</h1>
-<p>AI Prediction • Risk Detection • Future Monitoring</p>
+
+<h3>
+AI Prediction • Future Monitoring
+</h3>
+
 </div>
 """,
 unsafe_allow_html=True
@@ -313,32 +282,40 @@ unsafe_allow_html=True
 with right:
 
     st.info(
+
         IST.strftime(
             "%I:%M:%S %p"
         )
+
     )
+
+
+# =================================
+# KPI
+# =================================
 
 a,b,c,d=st.columns(4)
 
 a.metric(
 "🌡 Current",
-f"{base_temp:.1f}°C"
+f'{latest["temperature"]:.1f}°C'
 )
 
 b.metric(
 "🔥 Peak",
-f"{peak:.1f}°C"
+f'{peak:.1f}°C'
 )
 
 c.metric(
 "🎯 Confidence",
-f"{confidence}%"
+f'{confidence}%'
 )
 
 d.metric(
 "⚠ Risk",
 risk
 )
+
 
 # =================================
 # ALERT
@@ -348,23 +325,24 @@ st.subheader(
 "🚨 Forecast Alert"
 )
 
-if peak>40:
+if risk=="Extreme":
 
     st.error(
         "Extreme Heat Expected"
     )
 
-elif peak>35:
+elif risk=="Moderate":
 
     st.warning(
-        "Moderate Risk"
+        "Moderate Weather Risk"
     )
 
 else:
 
     st.success(
-        "Stable Forecast"
+        "Conditions Stable"
     )
+
 
 # =================================
 # HEALTH
@@ -378,26 +356,43 @@ st.progress(
 confidence/100
 )
 
+
 # =================================
 # CHART
 # =================================
 
+st.subheader(
+"📈 24 Hour Forecast"
+)
+
 fig=go.Figure()
 
 fig.add_trace(
+
 go.Scatter(
-x=forecast["time"],
+
+x=forecast["hour"],
+
 y=forecast["temperature"],
-fill="tozeroy"
+
+name="Temperature"
+
 )
+
 )
 
 fig.add_trace(
+
 go.Scatter(
-x=forecast["time"],
+
+x=forecast["hour"],
+
 y=forecast["humidity"],
-fill="tozeroy"
+
+name="Humidity"
+
 )
+
 )
 
 fig.update_layout(
@@ -409,18 +404,23 @@ fig,
 use_container_width=True
 )
 
+
 # =================================
 # TABLE
 # =================================
 
 st.subheader(
-"📄 Forecast Table"
+"📄 Forecast Data"
 )
 
 st.dataframe(
+
 forecast,
+
 use_container_width=True
+
 )
+
 
 # =================================
 # EXPORT
@@ -435,22 +435,37 @@ forecast
 )
 
 st.download_button(
+
 "Download Forecast",
+
 file,
+
 f"urbanmind_forecast{ext}",
+
 mime,
+
 use_container_width=True
+
 )
 
+
 # =================================
-# SUMMARY
+# INSIGHTS
 # =================================
 
-st.success(f"""
-Records: {len(df)}
-Peak: {peak:.1f}°C
-Confidence: {confidence}%
-Risk: {risk}/100
-Theme: {settings['theme']}
-Export: {settings['export']}
-""")
+st.subheader(
+"🧠 AI Insights"
+)
+
+st.info(
+f"""
+Average Temp:
+{forecast.temperature.mean():.1f}°C
+
+Average Humidity:
+{forecast.humidity.mean():.1f}%
+
+Peak:
+{peak:.1f}°C
+"""
+)

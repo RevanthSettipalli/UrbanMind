@@ -2,6 +2,10 @@ import streamlit as st
 
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
+from utils.settings import (
+    apply_theme,
+    load_settings
+)
 
 
 # ==================================
@@ -9,26 +13,37 @@ from utils.sidebar import render_sidebar
 # ==================================
 
 st.set_page_config(
-page_title="About",
-page_icon="ℹ️",
-layout="wide"
+    page_title="About",
+    page_icon="ℹ️",
+    layout="wide"
 )
 
 require_login()
 
 render_sidebar()
 
+settings = load_settings()
+
+st.markdown(
+    apply_theme(),
+    unsafe_allow_html=True
+)
+
 
 # ==================================
-# HERO
+# STYLE
 # ==================================
 
 st.markdown("""
 <style>
 
+.block-container{
+padding-top:.4rem!important;
+}
+
 .hero{
 
-padding:40px;
+padding:45px;
 
 border-radius:30px;
 
@@ -41,58 +56,120 @@ linear-gradient(
 
 color:white;
 
+margin-bottom:26px;
+
+}
+
+.hero h1{
+
+font-size:58px;
+
+margin:0;
+
+}
+
+.card{
+
+padding:25px;
+
+border-radius:22px;
+
+background:white;
+
+box-shadow:
+0 10px 30px
+rgba(0,0,0,.05);
+
+margin-bottom:20px;
+
 }
 
 </style>
 """,
-unsafe_allow_html=True
-)
+unsafe_allow_html=True)
 
+
+# ==================================
+# HERO
+# ==================================
 
 st.markdown("""
 <div class='hero'>
 
-# 🌍 UrbanMind
+<h1>
+🌍 UrbanMind
+</h1>
 
-Smart City Intelligence Platform
+<h3>
 
-AI • Big Data • Digital Twin
+Real-Time Urban Intelligence Platform
+
+</h3>
 
 </div>
 """,
-unsafe_allow_html=True
-)
+unsafe_allow_html=True)
 
 
 # ==================================
-# CONTENT
+# OVERVIEW
 # ==================================
-
-st.divider()
 
 st.subheader(
-"🚀 Overview"
+"🚀 Project Overview"
 )
 
-st.write("""
+st.markdown("""
+UrbanMind is a real-time urban intelligence platform designed to collect, analyze, monitor, visualize and forecast urban conditions using Artificial Intelligence and Big Data technologies.
 
-UrbanMind is an advanced urban
-intelligence platform built using:
+Core capabilities:
 
-• Streamlit
+• Real-Time Dashboard
 
-• Machine Learning
-
-• Big Data
+• Forecast Intelligence
 
 • Geo Intelligence
 
-• Forecast Systems
+• Monitoring Center
 
-• Digital Twin
+• Urban AI Assistant
 
+• Export & Reporting
+
+• Digital Twin Visualization
 """)
 
+
+# ==================================
+# METRICS
+# ==================================
+
+a,b,c,d = st.columns(4)
+
+a.metric(
+"Pages",
+8
+)
+
+b.metric(
+"AI Modules",
+5
+)
+
+c.metric(
+"Data Source",
+"Live"
+)
+
+d.metric(
+"Status",
+"Ready"
+)
+
+
+# ==================================
+# ARCHITECTURE
+# ==================================
 
 st.subheader(
 "🏗 Architecture"
@@ -101,62 +178,139 @@ st.subheader(
 st.code("""
 
 Producer
-↓
-
-Dataset
 
 ↓
 
-Analytics
+Weather Dataset
 
 ↓
 
-Forecast
+Analytics Engine
 
 ↓
 
-Geo
+Forecast Intelligence
 
 ↓
 
-Monitor
+Geo Intelligence
 
 ↓
 
-Assistant
+Monitor Center
+
+↓
+
+AI Assistant
+
+↓
+
+Export Layer
 
 """)
 
 
+# ==================================
+# MODULES
+# ==================================
+
 st.subheader(
-"🧠 Modules"
+"🧠 Core Modules"
 )
 
-modules=[
+modules = [
 
-"Dashboard",
+"📊 Dashboard",
 
-"Analytics",
+"📈 Analytics",
 
-"Forecast",
+"🔮 Forecast",
 
-"Geo",
+"🌍 Geo",
 
-"Monitor",
+"🖥 Monitor",
 
-"Assistant",
+"🤖 Assistant",
 
-"Settings"
+"⚙ Settings",
+
+"ℹ About"
 
 ]
 
-for m in modules:
+c1,c2 = st.columns(2)
 
-    st.success(m)
+for i,m in enumerate(modules):
+
+    if i%2==0:
+
+        c1.success(m)
+
+    else:
+
+        c2.success(m)
 
 
-st.divider()
+# ==================================
+# STACK
+# ==================================
 
-st.caption(
-"UrbanMind v2.0"
+st.subheader(
+"⚙ Technology Stack"
+)
+
+st.code("""
+
+Frontend
+• Streamlit
+
+Backend
+• Python
+
+Analytics
+• Pandas
+• Plotly
+
+AI
+• Machine Learning
+
+Visualization
+• Folium
+
+Deployment
+• Cloud Ready
+
+""")
+
+
+# ==================================
+# GOAL
+# ==================================
+
+st.subheader(
+"🎯 Vision"
+)
+
+st.success("""
+Build a scalable AI-powered
+decision support platform
+for future smart cities.
+""")
+
+
+# ==================================
+# STATUS
+# ==================================
+
+st.success(
+f"""
+
+UrbanMind v3.0
+
+Theme:
+{settings["theme"]}
+
+Production Candidate
+
+"""
 )

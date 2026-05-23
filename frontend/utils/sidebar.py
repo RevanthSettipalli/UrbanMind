@@ -3,32 +3,20 @@ import streamlit as st
 
 def render_sidebar():
 
-    current = st.session_state.get(
-        "current_page",
-        ""
-    )
-
     st.markdown("""
 <style>
 
-/* MAIN */
 .block-container{
 padding-top:.15rem!important;
 padding-left:2rem!important;
 padding-right:2rem!important;
 }
 
-
-/* REMOVE STREAMLIT NAV */
 [data-testid="stSidebarNav"]{
 display:none!important;
 }
 
-
-/* SIDEBAR */
-
 section[data-testid="stSidebar"]{
-
 background:
 linear-gradient(
 180deg,
@@ -37,66 +25,32 @@ linear-gradient(
 );
 
 width:300px!important;
-
 }
-
-
-/* CONTENT */
 
 [data-testid="stSidebarContent"]{
-
 padding-top:0rem!important;
-
 padding-left:20px;
-
 padding-right:20px;
-
 }
-
-
-/* MOVE TOP */
 
 .sidebar-content{
-
 margin-top:-78px;
-
 }
-
-
-/* LOGO */
 
 .logo{
-
 font-size:40px;
-
 font-weight:900;
-
 color:white;
-
-line-height:1;
-
-margin-bottom:4px;
-
+margin-bottom:6px;
 }
-
-
-/* SUB */
 
 .sub{
-
 color:#b8c7dc;
-
 font-size:15px;
-
-margin-bottom:28px;
-
+margin-bottom:26px;
 }
 
-
-/* USER */
-
 .user{
-
 background:
 rgba(
 255,
@@ -112,13 +66,7 @@ border-radius:24px;
 color:white;
 
 margin-bottom:28px;
-
-line-height:2;
-
 }
-
-
-/* NAV */
 
 .nav{
 
@@ -131,17 +79,13 @@ color:#86a5cc;
 font-weight:800;
 
 margin-bottom:12px;
-
 }
-
-
-/* BUTTON */
 
 .stButton>button{
 
 width:100%;
 
-height:54px;
+height:56px;
 
 border:none;
 
@@ -156,34 +100,13 @@ font-size:17px;
 font-weight:700;
 
 margin-bottom:10px;
-
-transition:.25s;
-
-box-shadow:
-0 10px 20px
-rgba(
-0,
-0,
-0,
-0.08
-);
-
 }
-
-
-/* HOVER */
 
 .stButton>button:hover{
 
 background:#edf4ff;
 
-transform:
-translateY(-2px);
-
 }
-
-
-/* LOGOUT */
 
 .logout .stButton>button{
 
@@ -198,20 +121,15 @@ color:white!important;
 
 }
 
-
-/* FOOTER */
-
 .footer{
 
-padding-top:18px;
+padding-top:20px;
 
 text-align:center;
 
 font-size:12px;
 
 color:#7f9bc0;
-
-opacity:.8;
 
 }
 
@@ -225,8 +143,7 @@ opacity:.55;
 
 </style>
 """,
-unsafe_allow_html=True
-)
+unsafe_allow_html=True)
 
     with st.sidebar:
 
@@ -236,19 +153,15 @@ unsafe_allow_html=True
         )
 
         username = (
-
             user.get(
                 "username",
-                "Admin"
+                "admin"
             )
-
             if isinstance(
                 user,
                 dict
             )
-
-            else "Admin"
-
+            else "admin"
         )
 
         st.markdown(
@@ -256,31 +169,21 @@ f"""
 <div class='sidebar-content'>
 
 <div class='logo'>
-
 🌍 UrbanMind
-
 </div>
 
 <div class='sub'>
-
 Smart City Intelligence
-
 </div>
 
 <div class='user'>
-
 👤 <b>{username}</b>
-
-<br>
-
+<br><br>
 🟢 Online
-
 </div>
 
 <div class='nav'>
-
 NAVIGATION
-
 </div>
 
 </div>
@@ -302,13 +205,15 @@ unsafe_allow_html=True
 
 ("🤖 Assistant","pages/assistant.py"),
 
+("📑 Reports","pages/reports.py"),
+
 ("⚙️ Settings","pages/settings.py"),
 
 ("ℹ️ About","pages/about.py")
 
 ]
 
-        for title,page in pages:
+        for title, page in pages:
 
             if st.button(
                 title,
@@ -353,5 +258,4 @@ AI • Big Data • Smart Cities
 
 </div>
 """,
-unsafe_allow_html=True
-)
+unsafe_allow_html=True)
