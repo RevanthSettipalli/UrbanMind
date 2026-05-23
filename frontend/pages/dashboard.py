@@ -1,550 +1,520 @@
-from streamlit_autorefresh import st_autorefresh
 import streamlit as st
 import pandas as pd
-import plotly.express as px
+import plotly.graph_objects as go
 import joblib
 import folium
+import pytz
+import json
+import sys
+
+from pathlib import Path
+from datetime import datetime
 from streamlit_folium import st_folium
+from streamlit_autorefresh import st_autorefresh
 
+from utils.auth_guard import require_login
+from utils.sidebar import render_sidebar
 
-# ==================================
-# PAGE CONFIG
-# ==================================
+# =====================================
+# PAGE
+# =====================================
 
 st.set_page_config(
-    page_title="UrbanMind",
+    page_title="UrbanMind Dashboard",
+    page_icon="🌍",
     layout="wide"
 )
 
-st.title("UrbanMind Dashboard")
+require_login()
 
-st.caption(
-    "Live Data • AI Analytics • Predictive Intelligence"
-)
+render_sidebar()
 
+# =====================================
+# ROOT
+# =====================================
 
-# ==================================
-# SIDEBAR
-# ==================================
+ROOT = Path(__file__).resolve().parents[2]
 
-st.sidebar.title(
-    "UrbanMind Controls"
-)
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
-records = st.sidebar.slider(
-    "Records to Display",
-    10,
-    100,
-    20
-)
+# =====================================
+# IMPORT
+# =====================================
 
-auto = st.sidebar.checkbox(
-    "Auto Refresh",
-    True
-)
-
-if auto:
-    st_autorefresh(
-        interval=3000,
-        key="urbanmind_live"
-    )
-
-
-# ==================================
-# LOAD DATA
-# ==================================
-# ==================================
-# LOAD DATA
-# ==================================
-
-import os
-
-CSV = os.getenv(
-    "CSV",
-    "data/weather_history.csv"
-)
-
-MODEL = os.getenv(
-    "MODEL",
-    "models/weather/weather_model.pkl"
-)
+from backend.intelligence.urban_score import calculate_score
 
 try:
 
-    df = pd.read_csv(CSV)
-
-except Exception as e:
-
-    st.error(
-        f"CSV Error: {e}"
+    from prediction.recommendation_engine import (
+        get_recommendation
     )
 
-    st.stop()
+except:
 
+    def get_recommendation(
+        temp,
+        hum
+    ):
 
-try:
+        if temp >= 40:
+            return "🔥 Heat Alert"
 
-    model = joblib.load(MODEL)
+        elif hum >= 90:
+            return "🌊 Flood Risk"
 
-except Exception as e:
+        return "✅ Safe Conditions"
 
-    st.error(
-        f"Model Error: {e}"
-    )
+# =====================================
+# REFRESH
+# =====================================
 
-    st.stop()
-
-
-latest = df.iloc[-1]
-
-latest_prediction = model.predict(
-    [[latest["humidity"]]]
-)[0]
-
-
-# ==================================
-# STATUS ROW
-# ==================================
-
-a, b, c = st.columns(3)
-
-with a:
-    st.success("● LIVE")
-
-with b:
-    st.info("Model Active")
-
-with c:
-    st.info("Streaming Enabled")
-
-st.caption(
-    f"Last Updated: {pd.Timestamp.now().strftime('%H:%M:%S')}"
+st_autorefresh(
+    interval=5000,
+    key="dashboard"
 )
 
+# =====================================
+# PATHS
+# =====================================
 
-# ==================================
-# KPI
-# ==================================
+CSV = ROOT / "data" / "weather_history.csv"
 
-st.subheader("City KPIs")
+MODEL = ROOT / "models" / "weather" / "weather_model.pkl"
 
-a, b, c, d = st.columns(4)
+ALERT = ROOT / "data" / "alerts.json"
 
-with a:
-    st.metric(
-        "Current Temp",
-        f"{latest['temperature']}°C"
-    )
+# =====================================
+# LOAD
+# =====================================
 
-with b:
-    st.metric(
-        "Current Humidity",
-        f"{latest['humidity']}%"
-    )
+@st.cache_data(ttl=5)
+def load_data():
 
-with c:
-    st.metric(
-        "Records",
-        len(df)
-    )
+    try:
 
-with d:
-    st.metric(
-        "Prediction",
-        f"{latest_prediction:.1f}°C"
-    )
+        return pd.read_csv(
+            CSV,
+            on_bad_lines="skip"
+        )
 
+    except:
 
-# ==================================
-# DATASET
-# ==================================
+        return pd.DataFrame()
 
-st.subheader(
-    "Weather Dataset"
-)
+@st.cache_resource
+def load_model():
 
-recent_df = df.tail(records)
+    try:
 
-st.dataframe(
-    recent_df,
-    use_container_width=True
-)
+        return joblib.load(
+            MODEL
+        )
 
+    except:
 
-# ==================================
-# AI
-# ==================================
+        return None
 
-st.subheader(
-    "AI Weather Prediction"
-)
+def load_alerts():
 
-humidity = st.slider(
-    "Select Humidity",
-    0,
-    100,
-    int(latest["humidity"])
-)
+    try:
 
-prediction = model.predict(
-    [[humidity]]
-)[0]
+        with open(ALERT) as f:
 
-st.metric(
-    "Predicted Temperature",
-    f"{prediction:.2f} °C"
-)
-
-confidence = 94
-
-st.progress(
-    confidence / 100
-)
-
-st.caption(
-    f"Model Confidence: {confidence}%"
-)
-
-
-# ==================================
-# HEALTH SCORE
-# ==================================
-
-score = 100
-
-if prediction > 35:
-    score -= 40
-
-if latest["humidity"] > 80:
-    score -= 20
-
-st.metric(
-    "Urban Health Score",
-    f"{score}/100"
-)
-
-if prediction > 35:
-
-    st.error(
-        "High Temperature Alert"
-    )
-
-elif prediction > 30:
-
-    st.warning(
-        "Warm Weather"
-    )
-
-else:
-
-    st.success(
-        "Normal Weather"
-    )
-
-
-# ==================================
-# TEMP TREND
-# ==================================
-
-st.subheader(
-    "Temperature Trend"
-)
-
-graph_df = df.tail(20)
-
-fig = px.area(
-    graph_df,
-    x="time",
-    y="temperature"
-)
-
-fig.update_layout(
-    yaxis_title="Temperature °C"
-)
-
-st.plotly_chart(
-    fig,
-    use_container_width=True
-)
-
-
-# ==================================
-# HUMIDITY
-# ==================================
-
-st.subheader(
-    "Humidity Analysis"
-)
-
-fig2 = px.bar(
-    graph_df,
-    x="time",
-    y="humidity"
-)
-
-st.plotly_chart(
-    fig2,
-    use_container_width=True
-)
-
-
-# ==================================
-# ANALYTICS
-# ==================================
-
-avg = df["temperature"].mean()
-
-avg_humidity = df["humidity"].mean()
-
-max_temp = df["temperature"].max()
-
-risk = (
-    "HIGH"
-    if max_temp > 37
-    else "MEDIUM"
-    if max_temp > 32
-    else "LOW"
-)
-
-st.subheader(
-    "Urban Analytics"
-)
-
-st.progress(
-    score / 100
-)
-
-st.caption(
-    f"Risk Score: {score}/100"
-)
-
-c1, c2, c3 = st.columns(3)
-
-with c1:
-
-    st.metric(
-        "Average Humidity",
-        f"{avg_humidity:.1f}%"
-    )
-
-with c2:
-
-    st.metric(
-        "Maximum Temperature",
-        f"{max_temp:.1f}°C"
-    )
-
-with c3:
-
-    st.metric(
-        "Urban Risk",
-        risk
-    )
-
-
-# ==================================
-# ANOMALY
-# ==================================
-
-st.subheader(
-    "City Health Status"
-)
-
-if latest["temperature"] > 38:
-
-    st.error(
-        "Urban Heat Risk Detected"
-    )
-
-elif latest["humidity"] > 85:
-
-    st.warning(
-        "Humidity Spike Detected"
-    )
-
-else:
-
-    st.success(
-        "City Stable"
-    )
-
-
-# ==================================
-# FORECAST
-# ==================================
-
-st.subheader(
-    "Forecast"
-)
-
-future = []
-
-for h in range(40, 90, 5):
-
-    future.append(
-        {
-            "Humidity": h,
-            "Predicted Temp":
-            round(
-                model.predict(
-                    [[h]]
-                )[0],
-                1
+            return json.load(
+                f
             )
-        }
+
+    except:
+
+        return []
+
+df = load_data()
+
+model = load_model()
+
+alerts = load_alerts()
+
+if df.empty:
+
+    st.warning(
+        "Waiting for Producer..."
     )
 
-future_df = pd.DataFrame(
-    future
+    st.stop()
+
+# =====================================
+# CLEAN
+# =====================================
+
+for c in [
+
+"time",
+"temperature",
+"humidity"
+
+]:
+
+    if c not in df:
+        df[c] = 0
+
+df["time"] = pd.to_datetime(
+    df["time"],
+    errors="coerce"
 )
 
-fig3 = px.line(
-    future_df,
-    x="Humidity",
-    y="Predicted Temp",
-    markers=True
+df["temperature"] = pd.to_numeric(
+    df["temperature"],
+    errors="coerce"
 )
 
-st.plotly_chart(
-    fig3,
-    use_container_width=True
+df["humidity"] = pd.to_numeric(
+    df["humidity"],
+    errors="coerce"
 )
 
+df = df.dropna()
 
-# ==================================
-# DIGITAL TWIN MAP
-# ==================================
+# =====================================
+# FILTER
+# =====================================
 
-st.subheader(
-    "Urban Digital Twin"
-)
+if "city" in df.columns:
 
-city = folium.Map(
-    location=[
-        16.5062,
-        80.6480
-    ],
-    zoom_start=12
-)
+    city = st.selectbox(
 
-folium.CircleMarker(
-    [
-        16.5062,
-        80.6480
-    ],
-    radius=20,
-    popup=f"{latest['temperature']} °C",
-    color="red",
-    fill=True
-).add_to(city)
+        "🏙 Select City",
 
-st_folium(
-    city,
-    width=1200,
-    height=500
-)
+        ["All Cities"]
 
+        +
 
-# ==================================
-# HEAT INDEX
-# ==================================
+        sorted(
+            df["city"]
+            .astype(str)
+            .unique()
+        )
 
-st.subheader(
-    "Heat Index"
-)
-
-heat = avg + avg_humidity / 20
-
-st.metric(
-    "Feels Like",
-    f"{heat:.1f}°C"
-)
-
-
-# ==================================
-# SYSTEM
-# ==================================
-
-st.subheader(
-    "System Status"
-)
-
-x, y, z = st.columns(3)
-
-with x:
-    st.success(
-        "API Running"
     )
 
-with y:
-    st.success(
-        "Consumer Running"
+    if city != "All Cities":
+
+        df = df[
+            df["city"]
+            ==
+            city
+        ]
+
+if len(df) == 0:
+
+    st.warning(
+        "No records available"
     )
 
-with z:
-    st.success(
-        "Model Loaded"
+    st.stop()
+
+plot = df.tail(40)
+
+latest = plot.iloc[-1]
+
+# =====================================
+# TIME
+# =====================================
+
+IST = datetime.now(
+    pytz.timezone(
+        "Asia/Kolkata"
+    )
+)
+
+# =====================================
+# AI
+# =====================================
+
+try:
+
+    prediction = round(
+
+        float(
+
+            model.predict([[
+
+                latest[
+                    "humidity"
+                ]
+
+            ]])[0]
+
+        ),
+
+        1
+
     )
 
+except:
 
-# ==================================
-# EXPORT
-# ==================================
+    prediction = round(
+
+        float(
+
+            latest[
+                "temperature"
+            ]
+
+        ),
+
+        1
+
+    )
+
+recommendation = get_recommendation(
+
+latest[
+"temperature"
+],
+
+latest[
+"humidity"
+]
+
+)
+
+urban = calculate_score(
+
+latest[
+"temperature"
+],
+
+latest[
+"humidity"
+],
+
+prediction
+
+)
+
+health = urban["score"]
+
+# =====================================
+# HEADER
+# =====================================
+
+left,right = st.columns([4,1])
+
+with left:
+
+    st.title(
+        "🌍 UrbanMind Dashboard"
+    )
+
+with right:
+
+    st.info(
+        IST.strftime(
+            "%I:%M:%S %p"
+        )
+    )
+
+# =====================================
+# KPI
+# =====================================
+
+a,b,c,d,e = st.columns(5)
+
+a.metric(
+"Temperature",
+f"{latest['temperature']}°C"
+)
+
+b.metric(
+"Humidity",
+f"{latest['humidity']}%"
+)
+
+c.metric(
+"Prediction",
+f"{prediction}°C"
+)
+
+d.metric(
+"Health",
+f"{health}%"
+)
+
+e.metric(
+"Urban Score",
+urban["score"]
+)
+
+# =====================================
+# HEALTH
+# =====================================
 
 st.subheader(
-    "Export"
+"🖥 System Health"
 )
 
-summary = pd.DataFrame(
-    {
-        "Average Temp": [avg],
-        "Average Humidity": [avg_humidity],
-        "Maximum Temp": [max_temp],
-        "Risk": [risk]
-    }
+st.progress(
+health/100
 )
 
-st.download_button(
-    "Download Analytics Report",
-    summary.to_csv(
-        index=False
-    ),
-    "urbanmind_report.csv"
-)
+# =====================================
+# ALERTS
+# =====================================
 
-st.download_button(
-    "Download Dataset",
-    df.to_csv(
-        index=False
-    ),
-    "weather_history.csv"
-)
+if alerts:
 
+    st.subheader(
+        "🚨 Alerts"
+    )
 
-# ==================================
-# EXECUTIVE SUMMARY
-# ==================================
+    for alert in alerts:
 
-st.divider()
+        st.warning(
+
+            alert.get(
+                "message",
+                ""
+            )
+
+        )
+
+# =====================================
+# RECOMMENDATION
+# =====================================
 
 st.subheader(
-    "Executive Summary"
+"🤖 Recommendation"
 )
 
 st.info(
-f"""
-Temperature: {latest['temperature']} °C
-
-Humidity: {latest['humidity']} %
-
-Prediction: {prediction:.1f} °C
-
-Risk Level: {risk}
-
-Records: {len(df)}
-"""
+recommendation
 )
 
-st.caption(
-    "UrbanMind • Real-Time Urban Intelligence Platform"
+# =====================================
+# CHARTS
+# =====================================
+
+left,right = st.columns(2)
+
+with left:
+
+    fig = go.Figure()
+
+    fig.add_trace(
+
+go.Scatter(
+
+x=plot["time"],
+
+y=plot["temperature"]
+
+)
+
+)
+
+    st.plotly_chart(
+        fig,
+        use_container_width=True
+    )
+
+with right:
+
+    fig2 = go.Figure()
+
+    fig2.add_trace(
+
+go.Scatter(
+
+x=plot["time"],
+
+y=plot["humidity"]
+
+)
+
+)
+
+    st.plotly_chart(
+        fig2,
+        use_container_width=True
+    )
+
+# =====================================
+# MAP
+# =====================================
+
+st.subheader(
+"🗺 Urban Digital Twin"
+)
+
+m = folium.Map(
+
+location=[
+20.5,
+78.9
+],
+
+zoom_start=5
+
+)
+
+folium.CircleMarker(
+
+location=[
+16.5,
+80.64
+],
+
+radius=18,
+
+popup=
+recommendation,
+
+fill=True
+
+).add_to(
+m
+)
+
+st_folium(
+
+m,
+
+height=450,
+
+key="dashboard_map"
+
+)
+
+# =====================================
+# DATA
+# =====================================
+
+st.subheader(
+"📄 Live Dataset"
+)
+
+st.dataframe(
+
+plot.iloc[::-1],
+
+use_container_width=True
+
+)
+
+# =====================================
+# SUMMARY
+# =====================================
+
+st.success(
+f"""
+Records:
+{len(df)}
+
+Prediction:
+{prediction}
+
+Urban Score:
+{urban["score"]}
+"""
 )

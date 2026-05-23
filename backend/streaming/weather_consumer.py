@@ -1,53 +1,135 @@
-import requests
+from kafka import KafkaConsumer
+import json
 import pandas as pd
-import time
 import os
+from pathlib import Path
 
 
-API = "http://127.0.0.1:8000/weather"
+# ==========================
+# PATH
+# ==========================
 
-FILE = "data/weather_history.csv"
+ROOT = Path(__file__).resolve().parents[2]
+
+CSV = ROOT / "data" / "weather_history.csv"
 
 
-while True:
+# ==========================
+# KAFKA
+# ==========================
+
+consumer = KafkaConsumer(
+
+    "weather",
+
+    bootstrap_servers="urbanmind-kafka:9092",
+
+    auto_offset_reset="latest",
+
+    value_deserializer=lambda x:
+    json.loads(
+        x.decode("utf-8")
+    )
+)
+
+print("Consumer Started")
+
+
+# ==========================
+# CREATE CSV
+# ==========================
+
+if not CSV.exists():
+
+    pd.DataFrame(
+
+        columns=[
+
+            "time",
+
+            "city",
+
+            "temperature",
+
+            "humidity"
+
+        ]
+
+    ).to_csv(
+
+        CSV,
+
+        index=False
+
+    )
+
+
+# ==========================
+# CONSUME
+# ==========================
+
+for message in consumer:
 
     try:
 
-        response = requests.get(API)
+        data = message.value
 
-        data = response.json()
+        row = pd.DataFrame([{
 
-        new_df = pd.DataFrame(data)
+            "time":
+            data.get(
+                "timestamp"
+            ),
 
-        if os.path.exists(FILE):
+            "city":
+            data.get(
+                "city",
+                "Unknown"
+            ),
 
-            try:
-                old_df = pd.read_csv(FILE)
+            "temperature":
+            data.get(
+                "temperature"
+            ),
 
-                final_df = pd.concat(
-                    [old_df, new_df],
-                    ignore_index=True
-                )
+            "humidity":
+            data.get(
+                "humidity"
+            )
 
-            except:
-                final_df = new_df
+        }])
 
-        else:
+        row.to_csv(
 
-            final_df = new_df
+            CSV,
 
+            mode="a",
 
-        final_df.to_csv(
-            FILE,
+            header=False,
+
             index=False
+
         )
 
-        print("Saved")
+        print("\nWeather Received")
+        print(
+            f"City: {data.get('city')}"
+        )
 
+        print(
+            f"Temp: {data.get('temperature')}°C"
+        )
+
+        print(
+            f"Humidity: {data.get('humidity')}%"
+        )
+
+        print(
+            f"Saved → {CSV}"
+        )
 
     except Exception as e:
 
-        print("Error:", e)
-
-
-    time.sleep(5)
+        print(
+            f"Error: {e}"
+        )
