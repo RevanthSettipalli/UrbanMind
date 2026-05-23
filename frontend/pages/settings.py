@@ -1,6 +1,4 @@
 import streamlit as st
-from pathlib import Path
-import sys
 
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
@@ -39,13 +37,16 @@ config = load_settings()
 
 
 # ====================================
-# HERO
+# STYLE
 # ====================================
 
 st.markdown("""
-<div style='
-padding:40px;
-border-radius:28px;
+<style>
+
+.hero{
+padding:32px;
+
+border-radius:26px;
 
 background:
 linear-gradient(
@@ -56,17 +57,69 @@ linear-gradient(
 
 color:white;
 
-margin-bottom:30px;
-'>
+margin-bottom:28px;
+}
 
+.hero h1{
+margin:0;
+
+font-size:52px;
+
+font-weight:700;
+}
+
+.card{
+
+padding:26px;
+
+background:white;
+
+border-radius:22px;
+
+box-shadow:
+0 10px 30px
+rgba(0,0,0,.06);
+
+margin-bottom:22px;
+}
+
+[data-testid="metric-container"]{
+
+background:white;
+
+padding:20px;
+
+border-radius:18px;
+
+box-shadow:
+0 8px 20px
+rgba(0,0,0,.04);
+
+}
+
+.stButton>button{
+
+height:55px;
+
+border-radius:14px;
+
+font-size:18px;
+
+}
+
+</style>
+""",
+unsafe_allow_html=True)
+
+
+# ====================================
+# HERO
+# ====================================
+
+st.markdown(
+"""
+<div class='hero'>
 <h1>⚙️ Settings</h1>
-
-<p>Customize UrbanMind</p>
-
-<p>
-Theme • Notifications • Export
-</p>
-
 </div>
 """,
 unsafe_allow_html=True
@@ -74,107 +127,104 @@ unsafe_allow_html=True
 
 
 # ====================================
-# APPEARANCE
+# SETTINGS PANEL
 # ====================================
 
+st.markdown(
+"<div class='card'>",
+unsafe_allow_html=True
+)
+
 st.subheader(
-    "🎨 Appearance"
+"🎨 Appearance"
 )
 
 theme = st.selectbox(
 
-    "Theme",
+"Theme",
 
-    [
-        "Dark",
-        "Light"
-    ],
+["Dark","Light"],
 
-    index=0
-    if config.get(
-        "theme"
-    ) == "Dark"
-
-    else 1
+index=0
+if config.get(
+"theme"
+)=="Dark"
+else 1
 
 )
 
 
 refresh = st.slider(
 
-    "Refresh Rate",
+"Refresh Rate",
 
-    5,
+5,
 
-    60,
+60,
 
-    config.get(
-        "refresh",
-        10
-    )
+config.get(
+"refresh",
+10
+)
 
 )
 
 
 notify = st.toggle(
 
-    "Enable Notifications",
+"Enable Notifications",
 
-    value=config.get(
-        "notify",
-        True
-    )
+value=config.get(
+"notify",
+True
+)
 
 )
 
 
 export = st.selectbox(
 
-    "Export Format",
+"Export Format",
 
-    [
+[
 
-        "CSV",
+"CSV",
 
-        "JSON",
+"JSON",
 
-        "Excel"
+"Excel"
 
-    ],
+],
 
-    index=[
+index=[
 
-        "CSV",
+"CSV",
 
-        "JSON",
+"JSON",
 
-        "Excel"
+"Excel"
 
-    ].index(
+].index(
 
-        config.get(
-            "export",
-            "CSV"
-        )
+config.get(
+"export",
+"CSV"
+)
 
-    )
+)
 
 )
 
 
-# ====================================
-# SAVE
-# ====================================
-
 if st.button(
 
-    "💾 Save Settings",
+"💾 Save Settings",
 
-    use_container_width=True
+use_container_width=True
 
 ):
 
-    new_settings = {
+    settings = {
 
         "theme":theme,
 
@@ -187,69 +237,76 @@ if st.button(
     }
 
     save_settings(
-        new_settings
-    )
-
-    st.session_state.update(
-        new_settings
+        settings
     )
 
     st.success(
-        "Settings Applied Successfully"
+        "Settings Saved Successfully"
     )
 
     st.rerun()
 
+st.markdown(
+"</div>",
+unsafe_allow_html=True
+)
+
 
 # ====================================
-# CURRENT
+# CURRENT SETTINGS
 # ====================================
-
-st.divider()
 
 st.subheader(
-    "🧠 Current Settings"
+"🧠 Current Settings"
 )
 
 config = load_settings()
 
 a,b,c,d = st.columns(4)
 
-a.metric(
+with a:
 
-    "Theme",
+    st.metric(
 
-    config["theme"]
+        "Theme",
 
-)
+        config["theme"]
 
-b.metric(
+    )
 
-    "Refresh",
+with b:
 
-    f'{config["refresh"]}s'
+    st.metric(
 
-)
+        "Refresh",
 
-c.metric(
+        f'{config["refresh"]}s'
 
-    "Alerts",
+    )
 
-    "ON"
+with c:
 
-    if config["notify"]
+    st.metric(
 
-    else "OFF"
+        "Alerts",
 
-)
+        "ON"
 
-d.metric(
+        if config["notify"]
 
-    "Export",
+        else "OFF"
 
-    config["export"]
+    )
 
-)
+with d:
+
+    st.metric(
+
+        "Export",
+
+        config["export"]
+
+    )
 
 
 # ====================================
@@ -258,10 +315,10 @@ d.metric(
 
 st.info(
 """
-Theme changes apply after saving.
+• Save to apply changes
 
-Export format affects downloads.
+• Export format controls downloads
 
-Refresh controls live updates.
+• Refresh controls live updates
 """
 )

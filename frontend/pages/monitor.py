@@ -1,9 +1,9 @@
 from streamlit_autorefresh import st_autorefresh
 import streamlit as st
 import pandas as pd
+import plotly.graph_objects as go
 import joblib
 import pytz
-import plotly.graph_objects as go
 import time
 
 from pathlib import Path
@@ -11,18 +11,15 @@ from datetime import datetime
 
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
-
 from utils.settings import (
     apply_theme,
     load_settings,
     export_data
 )
 
-try:
-    import psutil
-except:
-    psutil=None
-
+from backend.intelligence.monitor_engine import (
+    get_system_metrics
+)
 
 # =====================================
 # PAGE
@@ -38,7 +35,7 @@ require_login()
 
 render_sidebar()
 
-settings=load_settings()
+settings = load_settings()
 
 st.markdown(
     apply_theme(),
@@ -46,23 +43,24 @@ st.markdown(
 )
 
 st_autorefresh(
-    interval=settings["refresh"]*1000,
+    interval=settings["refresh"] * 1000,
     key="monitor_refresh"
 )
 
 
 # =====================================
-# UI
+# STYLE
 # =====================================
 
 st.markdown("""
 <style>
 
 .block-container{
-padding-top:.4rem;
+padding-top:.4rem!important;
 }
 
 .hero{
+
 padding:40px;
 
 border-radius:30px;
@@ -77,15 +75,15 @@ linear-gradient(
 color:white;
 
 margin-bottom:25px;
+
 }
 
 .hero h1{
-font-size:48px;
-}
 
-[data-testid="metric-container"]{
-padding:24px;
-border-radius:20px;
+font-size:54px;
+
+margin:0;
+
 }
 
 </style>
@@ -97,11 +95,11 @@ unsafe_allow_html=True)
 # PATH
 # =====================================
 
-ROOT=Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2]
 
-CSV=ROOT/"data"/"weather_history.csv"
+CSV = ROOT/"data"/"weather_history.csv"
 
-MODEL=ROOT/"models"/"weather"/"weather_model.pkl"
+MODEL = ROOT/"models"/"weather"/"weather_model.pkl"
 
 
 # =====================================
@@ -112,12 +110,14 @@ MODEL=ROOT/"models"/"weather"/"weather_model.pkl"
 def load():
 
     try:
+
         return pd.read_csv(
             CSV,
             on_bad_lines="skip"
         )
 
     except:
+
         return pd.DataFrame()
 
 
@@ -137,14 +137,14 @@ def model_loaded():
         return False
 
 
-df=load()
+df = load()
 
-model=model_loaded()
+model = model_loaded()
 
 if df.empty:
 
     st.warning(
-        "Waiting for Data..."
+        "Waiting for Monitoring Data..."
     )
 
     st.stop()
@@ -156,57 +156,43 @@ if df.empty:
 
 if "time" in df:
 
-    df["time"]=pd.to_datetime(
+    df["time"] = pd.to_datetime(
         df["time"],
         errors="coerce"
     )
 
-df=df.dropna()
+df = df.dropna()
 
-records=len(df)
+records = len(df)
 
 
 # =====================================
 # SYSTEM
 # =====================================
 
-cpu=(
-psutil.cpu_percent()
-if psutil
-else 0
+metrics = get_system_metrics(
+    records
 )
 
-ram=(
-psutil.virtual_memory().percent
-if psutil
-else 0
-)
+cpu = metrics["cpu"]
 
-uptime=round(
-time.time()/3600,
-1
-)
+ram = metrics["ram"]
 
-confidence=min(
-98,
-70+(records//100)
-)
+confidence = metrics["confidence"]
 
-health=int(
+health = metrics["health"]
 
-max(
-0,
-100-(cpu*.3+ram*.2)
-)
-
+uptime = round(
+    time.time()/3600,
+    1
 )
 
 
 # =====================================
-# HEADER
+# HERO
 # =====================================
 
-left,right=st.columns([5,1])
+left,right = st.columns([5,1])
 
 with left:
 
@@ -217,9 +203,11 @@ with left:
 🖥 Monitor Center
 </h1>
 
-<p>
-Operations • System Health • AI Monitoring
-</p>
+<h3>
+
+Operations • AI Monitoring
+
+</h3>
 
 </div>
 """,
@@ -234,10 +222,13 @@ datetime.now(
 
 pytz.timezone(
 "Asia/Kolkata"
+
 )
 
 ).strftime(
+
 "%I:%M:%S %p"
+
 )
 
 )
@@ -247,7 +238,7 @@ pytz.timezone(
 # KPI
 # =====================================
 
-a,b,c,d,e,f=st.columns(6)
+a,b,c,d,e,f = st.columns(6)
 
 a.metric(
 "🧠 CPU",
@@ -305,30 +296,36 @@ f"Health Score • {health}%"
 # =====================================
 
 st.subheader(
-"🧩 Services"
+"🧩 Active Services"
 )
 
-x,y,z=st.columns(3)
+x,y,z = st.columns(3)
 
-x.success(
-"🟢 Producer"
-)
+with x:
 
-y.success(
-"🟢 Dashboard"
-)
-
-if model:
-
-    z.success(
-        "🟢 AI Running"
+    st.success(
+        "🟢 Producer"
     )
 
-else:
+with y:
 
-    z.error(
-        "🔴 Model Missing"
+    st.success(
+        "🟢 Dashboard"
     )
+
+with z:
+
+    if model:
+
+        st.success(
+            "🟢 AI Running"
+        )
+
+    else:
+
+        st.error(
+            "🔴 Model Missing"
+        )
 
 
 # =====================================
@@ -339,7 +336,7 @@ st.subheader(
 "📈 Dataset Growth"
 )
 
-fig=go.Figure()
+fig = go.Figure()
 
 fig.add_trace(
 
@@ -359,6 +356,10 @@ fill="tozeroy"
 
 )
 
+fig.update_layout(
+height=350
+)
+
 st.plotly_chart(
 fig,
 use_container_width=True
@@ -372,16 +373,22 @@ use_container_width=True
 if {
 
 "time",
+
 "temperature",
+
 "humidity"
 
 }.issubset(
 df.columns
 ):
 
-    sample=df.tail(100)
+    st.subheader(
+        "🌡 Live Weather"
+    )
 
-    fig2=go.Figure()
+    sample = df.tail(100)
+
+    fig2 = go.Figure()
 
     fig2.add_trace(
 
@@ -411,6 +418,10 @@ name="Humidity"
 
 )
 
+    fig2.update_layout(
+        height=450
+    )
+
     st.plotly_chart(
         fig2,
         use_container_width=True
@@ -435,17 +446,13 @@ use_container_width=True
 # EXPORT
 # =====================================
 
-st.subheader(
-"⬇ Export Monitor"
-)
-
-file,mime,ext=export_data(
+file,mime,ext = export_data(
 df
 )
 
 st.download_button(
 
-"Download Report",
+"⬇ Export Monitor",
 
 file,
 
@@ -462,16 +469,26 @@ use_container_width=True
 # SUMMARY
 # =====================================
 
-st.success(f"""
-CPU: {cpu}%
+st.success(
+f"""
 
-RAM: {ram}%
+CPU:
+{cpu}%
 
-Records: {records}
+RAM:
+{ram}%
 
-Health: {health}%
+Records:
+{records}
 
-Export: {settings["export"]}
+Health:
+{health}%
 
-Theme: {settings["theme"]}
-""")
+Theme:
+{settings["theme"]}
+
+Export:
+{settings["export"]}
+
+"""
+)

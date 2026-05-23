@@ -1,32 +1,189 @@
-# UrbanMind
+# 🌍 UrbanMind
 
-Real-Time Big Data Platform for Urban Intelligence and Predictive Decision Support.
+## Real-Time Urban Intelligence Platform
 
-## Objectives
+UrbanMind is an AI + Big Data powered Smart City Intelligence platform designed to monitor, analyze, forecast, and visualize urban environmental conditions in real time.
 
-- Collect urban data
-- Process large-scale datasets
-- Generate AI predictions
-- Visualize insights
+---
 
-## Tech Stack
+## 🚀 Features
 
-Frontend:
-React
+### 📊 Dashboard
+- Real-time urban monitoring
+- Live KPI cards
+- Health score
+- AI recommendations
 
-Backend:
-FastAPI
+### 📈 Analytics
+- Urban scoring engine
+- City ranking
+- Statistical insights
 
-Big Data:
-Spark
-Kafka
+### 🔮 Forecast
+- Temperature prediction
+- Humidity forecasting
+- Risk detection
+- Confidence analysis
 
-Database:
-MongoDB
+### 🌍 Geo Intelligence
+- Digital Twin map
+- City health visualization
+- Geo ranking
 
-Deployment:
-Docker
+### 🖥 Monitor Center
+- System monitoring
+- Dataset tracking
+- AI status monitoring
 
-## Project Status
+### 🤖 Urban AI Assistant
+- Chat interface
+- Urban insights
+- Smart recommendations
 
-Phase 1 — Project Foundation
+### ⚙ Settings
+- Theme control
+- Export system
+- Refresh management
+
+---
+
+# 🏗 Architecture
+
+```text
+Producer
+↓
+
+Weather Dataset
+
+↓
+
+Analytics Engine
+
+↓
+
+Forecast Engine
+
+↓
+
+Geo Intelligence
+
+↓
+
+Monitor Center
+
+↓
+
+AI Assistant
+
+↓
+
+Export Layer
+```
+
+---
+
+# 🧠 Tech Stack
+
+### Frontend
+- Streamlit
+
+### Backend
+- Python
+
+### Data
+- Pandas
+- NumPy
+
+### Visualization
+- Plotly
+- Folium
+
+### AI / ML
+- Scikit-Learn
+- Joblib
+
+### Big Data
+- Kafka
+- Spark
+
+---
+
+# 📷 Screenshots
+
+## Dashboard
+
+![Dashboard](assets/dashboard.png)
+
+---
+
+## Analytics
+
+![Analytics](assets/analytics.png)
+
+---
+
+## Forecast
+
+![Forecast](assets/forecast.png)
+
+---
+
+## Geo
+
+![Geo](assets/geo.png)
+
+---
+
+## Monitor
+
+![Monitor](assets/monitor.png)
+
+---
+
+## Assistant
+
+![Assistant](assets/assistant.png)
+
+---
+
+## Settings
+
+![Settings](assets/settings.png)
+
+---
+
+## About
+
+![About](assets/about.png)
+
+---
+
+# ⚙ Installation
+
+```bash
+git clone <repo>
+
+cd UrbanMind
+
+pip install -r requirements.txt
+
+streamlit run frontend/home.py
+```
+
+---
+
+# 🎯 Future Scope
+
+- Real IoT Integration
+- Cloud Deployment
+- Deep Learning Forecasting
+- Satellite Geo Intelligence
+- Multi-City Expansion
+
+---
+
+# 👨‍💻 Author
+
+Revanth Settipalli
+
+UrbanMind • Smart City Intelligence

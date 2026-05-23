@@ -15,6 +15,10 @@ from utils.settings import (
     export_data
 )
 
+from backend.intelligence.assistant_engine import (
+    ask_urbanmind
+)
+
 
 # =====================================
 # PAGE
@@ -38,20 +42,20 @@ st.markdown(
 )
 
 st_autorefresh(
-    interval=settings["refresh"]*1000,
+    interval=settings["refresh"] * 1000,
     key="assistant_refresh"
 )
 
 
 # =====================================
-# UI
+# STYLE
 # =====================================
 
 st.markdown("""
 <style>
 
 .block-container{
-padding-top:.4rem;
+padding-top:.4rem!important;
 }
 
 .hero{
@@ -74,14 +78,16 @@ margin-bottom:24px;
 }
 
 .hero h1{
-font-size:48px;
+
+font-size:54px;
+
+margin:0;
+
 }
 
-.chat-box{
+.quick button{
 
-padding:18px;
-
-border-radius:18px;
+height:52px;
 
 }
 
@@ -94,7 +100,7 @@ unsafe_allow_html=True)
 # HEADER
 # =====================================
 
-left,right=st.columns([5,1])
+left,right = st.columns([5,1])
 
 with left:
 
@@ -105,14 +111,15 @@ with left:
 🤖 Urban AI Assistant
 </h1>
 
-<p>
-Ask Questions • Analyze Cities • Get Insights
-</p>
+<h3>
+
+Ask • Analyze • Predict
+
+</h3>
 
 </div>
 """,
-unsafe_allow_html=True
-)
+unsafe_allow_html=True)
 
 with right:
 
@@ -136,12 +143,12 @@ pytz.timezone(
 # DATA
 # =====================================
 
-ROOT=Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2]
 
-CSV=ROOT/"data"/"weather_history.csv"
+CSV = ROOT/"data"/"weather_history.csv"
 
 
-@st.cache_data
+@st.cache_data(ttl=5)
 def load():
 
     try:
@@ -155,7 +162,7 @@ def load():
         return pd.DataFrame()
 
 
-df=load()
+df = load()
 
 
 # =====================================
@@ -168,15 +175,15 @@ if "messages" not in st.session_state:
 
 
 # =====================================
-# ACTIONS
+# CLEAR
 # =====================================
 
-left,right=st.columns([4,1])
+_,clear = st.columns([6,1])
 
-with right:
+with clear:
 
     if st.button(
-        "🗑 Clear Chat"
+        "🗑 Clear"
     ):
 
         st.session_state.messages=[]
@@ -185,7 +192,7 @@ with right:
 
 
 # =====================================
-# CHAT
+# HISTORY
 # =====================================
 
 for msg in st.session_state.messages:
@@ -199,13 +206,29 @@ for msg in st.session_state.messages:
         )
 
 
-prompt=st.chat_input(
-"Ask UrbanMind..."
+# =====================================
+# INPUT
+# =====================================
+
+prompt = st.chat_input(
+    "Ask UrbanMind..."
 )
 
 
+def respond(text):
+
+    if df.empty:
+
+        return "Dataset unavailable"
+
+    return ask_urbanmind(
+        text,
+        df
+    )
+
+
 # =====================================
-# AI ENGINE
+# CHAT
 # =====================================
 
 if prompt:
@@ -226,109 +249,9 @@ if prompt:
             prompt
         )
 
-    q=prompt.lower()
-
-    answer=""
-
-    if df.empty:
-
-        answer="No dataset available."
-
-    elif "temperature" in q:
-
-        answer=f"""
-🌡 Average Temperature
-
-{df["temperature"].mean():.1f}°C
-"""
-
-    elif "humidity" in q:
-
-        answer=f"""
-💧 Average Humidity
-
-{df["humidity"].mean():.1f}%
-"""
-
-    elif "city" in q:
-
-        answer="\n".join(
-            sorted(
-                df[
-                    "city"
-                ]
-                .astype(str)
-                .unique()
-            )
-        )
-
-    elif "health" in q:
-
-        avg=df[
-            "temperature"
-        ].mean()
-
-        score=max(
-            60,
-            100-(avg-30)
-        )
-
-        answer=f"""
-❤️ Urban Health
-
-{score:.0f}%
-
-Status Stable
-"""
-
-    elif "risk" in q:
-
-        temp=df[
-            "temperature"
-        ].mean()
-
-        answer=(
-            "⚠ Moderate Risk"
-
-            if temp>35
-
-            else
-
-            "✅ Low Risk"
-        )
-
-    elif "summary" in q:
-
-        answer=f"""
-📊 Urban Summary
-
-Records:
-{len(df)}
-
-Temperature:
-{df["temperature"].mean():.1f}°C
-
-Humidity:
-{df["humidity"].mean():.1f}%
-"""
-
-    else:
-
-        answer="""
-I can help with:
-
-• Temperature
-
-• Humidity
-
-• Risk
-
-• Health
-
-• Cities
-
-• Summary
-"""
+    answer = respond(
+        prompt
+    )
 
     with st.chat_message(
         "assistant"
@@ -357,27 +280,35 @@ st.subheader(
 "⚡ Quick Questions"
 )
 
-a,b,c,d,e=st.columns(5)
+questions = [
 
-a.info(
-"Temperature"
-)
+"temperature",
 
-b.info(
-"Humidity"
-)
+"humidity",
 
-c.info(
-"Risk"
-)
+"city",
 
-d.info(
-"Health"
-)
+"health",
 
-e.info(
-"Summary"
-)
+"forecast"
+
+]
+
+cols = st.columns(5)
+
+for i,q in enumerate(
+questions
+):
+
+    with cols[i]:
+
+        if st.button(
+            q.title()
+        ):
+
+            st.info(
+                respond(q)
+            )
 
 
 # =====================================
@@ -386,11 +317,11 @@ e.info(
 
 if st.session_state.messages:
 
-    chat=pd.DataFrame(
+    chat = pd.DataFrame(
         st.session_state.messages
     )
 
-    file,mime,ext=export_data(
+    file,mime,ext = export_data(
         chat
     )
 
@@ -410,11 +341,13 @@ if st.session_state.messages:
 
 
 # =====================================
-# SUMMARY
+# STATUS
 # =====================================
 
-st.success(f"""
-Assistant Active
+st.success(
+f"""
+
+Assistant Ready
 
 Theme:
 {settings["theme"]}
@@ -424,4 +357,6 @@ Export:
 
 Messages:
 {len(st.session_state.messages)}
-""")
+
+"""
+)

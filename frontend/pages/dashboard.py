@@ -20,9 +20,9 @@ from utils.settings import (
     export_data
 )
 
-# =====================================
+# ====================================
 # PAGE
-# =====================================
+# ====================================
 
 st.set_page_config(
     page_title="UrbanMind Dashboard",
@@ -31,7 +31,6 @@ st.set_page_config(
 )
 
 require_login()
-
 render_sidebar()
 
 st.markdown(
@@ -41,107 +40,61 @@ st.markdown(
 
 settings = load_settings()
 
+# ====================================
+# AUTO REFRESH
+# ====================================
 
-# =====================================
-# UI
-# =====================================
+st_autorefresh(
+    interval=settings.get("refresh", 5) * 1000,
+    key="dashboard"
+)
 
-st.markdown("""
-<style>
-
-.block-container{
-padding-top:0.4rem !important;
-}
-
-.hero{
-padding:42px;
-
-border-radius:30px;
-
-background:
-linear-gradient(
-135deg,
-#021224,
-#0d5a8a
-);
-
-color:white;
-
-margin-bottom:28px;
-}
-
-.hero h1{
-font-size:52px;
-margin-bottom:8px;
-}
-
-.hero p{
-font-size:20px;
-opacity:.9;
-}
-
-[data-testid="metric-container"]{
-
-background:white;
-
-padding:24px;
-
-border-radius:22px;
-
-box-shadow:
-0 10px 30px
-rgba(0,0,0,.05);
-
-border:
-1px solid #edf2f7;
-
-}
-
-.section{
-
-padding:24px;
-
-background:white;
-
-border-radius:22px;
-
-box-shadow:
-0 8px 25px
-rgba(0,0,0,.05);
-
-margin-bottom:22px;
-
-}
-
-.stAlert{
-border-radius:20px;
-}
-
-</style>
-""",
-unsafe_allow_html=True)
-
-
-# =====================================
+# ====================================
 # ROOT
-# =====================================
+# ====================================
 
 ROOT = Path(__file__).resolve().parents[2]
 
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+# ====================================
+# PATHS
+# ====================================
 
-# =====================================
-# IMPORT
-# =====================================
+CSV = ROOT / "data" / "weather_history.csv"
 
-from backend.intelligence.urban_score import calculate_score
+MODEL = (
+    ROOT
+    / "models"
+    / "weather"
+    / "weather_model.pkl"
+)
 
+ALERT = ROOT / "data" / "alerts.json"
+
+# ====================================
+# IMPORTS
+# ====================================
+
+from backend.intelligence.urban_score import (
+    calculate_score
+)
 
 try:
 
-    from prediction.recommendation_engine import (
+    from backend.intelligence.city_insights import (
+        generate_city_insights
+    )
+
+except:
+
+    def generate_city_insights(df):
+        return {}
+
+try:
+
+    from backend.intelligence.recommendation_engine import (
         get_recommendation
     )
 
@@ -149,53 +102,45 @@ except:
 
     def get_recommendation(temp, hum):
 
-        if temp >= 40:
-            return "🔥 Heat Alert"
+        if temp >= 42:
 
-        elif hum >= 90:
-            return "🌊 Flood Risk"
+            return {
+                "message":
+                "🔥 Extreme Heat Alert"
+            }
 
-        return "✅ Safe Conditions"
+        if hum >= 85:
 
+            return {
+                "message":
+                "🌧 Flood Risk"
+            }
 
-# =====================================
-# REFRESH
-# =====================================
+        return {
+            "message":
+            "✅ Conditions Stable"
+        }
 
-st_autorefresh(
-    interval=settings["refresh"] * 1000,
-    key="dashboard"
-)
-
-
-# =====================================
-# PATH
-# =====================================
-
-CSV = ROOT/"data"/"weather_history.csv"
-
-MODEL = ROOT/"models"/"weather"/"weather_model.pkl"
-
-ALERT = ROOT/"data"/"alerts.json"
-
-
-# =====================================
+# ====================================
 # LOAD
-# =====================================
+# ====================================
 
 @st.cache_data(ttl=5)
 def load_data():
 
     try:
 
-        return pd.read_csv(
-            CSV,
-            on_bad_lines="skip"
-        )
+        if CSV.exists():
+
+            return pd.read_csv(
+                CSV,
+                on_bad_lines="skip"
+            )
 
     except:
+        pass
 
-        return pd.DataFrame()
+    return pd.DataFrame()
 
 
 @st.cache_resource
@@ -203,34 +148,41 @@ def load_model():
 
     try:
 
-        return joblib.load(
-            MODEL
-        )
+        if MODEL.exists():
+
+            return joblib.load(
+                MODEL
+            )
 
     except:
+        pass
 
-        return None
+    return None
 
 
 def load_alerts():
 
     try:
 
-        with open(ALERT) as f:
+        if ALERT.exists():
 
-            return json.load(f)
+            with open(ALERT) as f:
+
+                return json.load(f)
 
     except:
+        pass
 
-        return []
+    return []
 
 
 df = load_data()
-
 model = load_model()
-
 alerts = load_alerts()
 
+# ====================================
+# CHECK
+# ====================================
 
 if df.empty:
 
@@ -238,24 +190,29 @@ if df.empty:
         "Waiting for Producer..."
     )
 
+    st.write(
+        "CSV:",
+        CSV
+    )
+
     st.stop()
 
-
-# =====================================
+# ====================================
 # CLEAN
-# =====================================
+# ====================================
 
-df["time"] = pd.to_datetime(
-    df["time"],
-    errors="coerce"
-)
+if "time" in df.columns:
+
+    df["time"] = pd.to_datetime(
+        df["time"],
+        errors="coerce"
+    )
 
 df = df.dropna()
 
-
-# =====================================
+# ====================================
 # FILTER
-# =====================================
+# ====================================
 
 if "city" in df.columns:
 
@@ -283,15 +240,13 @@ if "city" in df.columns:
             city
         ]
 
-
 plot = df.tail(40)
 
 latest = plot.iloc[-1]
 
-
-# =====================================
+# ====================================
 # TIME
-# =====================================
+# ====================================
 
 IST = datetime.now(
     pytz.timezone(
@@ -299,10 +254,9 @@ IST = datetime.now(
     )
 )
 
-
-# =====================================
+# ====================================
 # AI
-# =====================================
+# ====================================
 
 try:
 
@@ -310,13 +264,9 @@ try:
 
         float(
 
-            model.predict([[
-
-                latest[
-                    "humidity"
-                ]
-
-            ]])[0]
+            model.predict(
+                [[latest["humidity"]]]
+            )[0]
 
         ),
 
@@ -327,72 +277,183 @@ try:
 except:
 
     prediction = round(
-        latest[
-            "temperature"
-        ],
+        latest["temperature"],
         1
     )
 
+rec = get_recommendation(
 
-recommendation = get_recommendation(
+    latest["temperature"],
 
-latest["temperature"],
+    latest["humidity"]
 
-latest["humidity"]
+)
+
+recommendation = (
+
+    rec["message"]
+
+    if isinstance(rec, dict)
+
+    else str(rec)
 
 )
 
 urban = calculate_score(
 
-latest["temperature"],
+    latest["temperature"],
 
-latest["humidity"],
+    latest["humidity"],
 
-prediction
+    prediction
 
 )
 
 health = urban["score"]
 
+# ====================================
+# HERO
+# ====================================
 
-# =====================================
-# HEADER
-# =====================================
-
-left,right = st.columns([5,1])
+left, right = st.columns([5, 1])
 
 with left:
 
-    st.markdown(f"""
-<div class='hero'>
+    st.markdown(
+        """
+<div style="
+padding:55px;
+border-radius:35px;
+background:linear-gradient(135deg,#021224,#0d5a8a);
+color:white;
+margin-bottom:25px;
+">
 
-<h1>
-🌍 UrbanMind Dashboard
-</h1>
+<div style="
+font-size:68px;
+font-weight:900;
+">
 
-<p>
-Real-Time Urban Intelligence Platform
-</p>
+🌍 Urban Dashboard
+
+</div>
+
+<br>
+
+<div style="
+font-size:24px;
+opacity:.95;
+">
+
+Advanced Intelligence • Ranking • Geo Analysis
+
+</div>
 
 </div>
 """,
-unsafe_allow_html=True
-)
+        unsafe_allow_html=True
+    )
 
 with right:
 
-    st.info(
-IST.strftime(
-"%I:%M:%S %p"
-)
-)
+    st.markdown(
+        f"""
+<div style="
+background:#dfe8f5;
+padding:30px;
+border-radius:18px;
+font-size:18px;
+font-weight:700;
+text-align:center;
+margin-top:10px;
+">
 
+{IST.strftime("%I:%M:%S %p")}
 
-# =====================================
+</div>
+""",
+        unsafe_allow_html=True
+    )
+    
+# ====================================
 # KPI
-# =====================================
+# ====================================
 
-a,b,c,d,e = st.columns(5)
+a,b,c,d,e=st.columns(5)
+
+a.metric(
+"🏙 Urban Score",
+urban["score"]
+)
+
+b.metric(
+"🌡 Avg Temp",
+f"{latest['temperature']}°C"
+)
+
+c.metric(
+"💧 Avg Humidity",
+f"{latest['humidity']}%"
+)
+
+d.metric(
+"📄 Records",
+len(df)
+)
+
+e.metric(
+"🔮 Prediction",
+f"{prediction}°C"
+)
+
+# ====================================
+# HEALTH
+# ====================================
+
+st.subheader(
+"🩺 Urban Health"
+)
+
+st.progress(
+health/100
+)
+
+# ====================================
+# ALERT
+# ====================================
+
+if alerts:
+
+    st.subheader(
+        "🚨 Alerts"
+    )
+
+    for a in alerts:
+
+        st.warning(
+            a.get(
+                "message",
+                ""
+            )
+        )
+
+# ====================================
+# RECOMMENDATION
+# ====================================
+
+st.subheader(
+"🧠 Smart Recommendation"
+)
+
+st.info(
+recommendation
+)
+
+# ====================================
+# KPI
+# ====================================
+
+a,b,c,d,e=st.columns(5)
 
 a.metric(
 "🌡 Temperature",
@@ -419,10 +480,9 @@ e.metric(
 urban["score"]
 )
 
-
-# =====================================
+# ====================================
 # HEALTH
-# =====================================
+# ====================================
 
 st.subheader(
 "🖥 System Health"
@@ -432,10 +492,9 @@ st.progress(
 health/100
 )
 
-
-# =====================================
+# ====================================
 # ALERTS
-# =====================================
+# ====================================
 
 if alerts:
 
@@ -452,10 +511,9 @@ if alerts:
             )
         )
 
-
-# =====================================
+# ====================================
 # AI
-# =====================================
+# ====================================
 
 st.subheader(
 "🤖 Recommendation"
@@ -465,114 +523,92 @@ st.info(
 recommendation
 )
 
-
-# =====================================
+# ====================================
 # CHARTS
-# =====================================
+# ====================================
 
 left,right=st.columns(2)
 
 with left:
 
     st.subheader(
-        "🌡 Temperature Trend"
+        "🌡 Temperature"
     )
 
     fig=go.Figure()
 
     fig.add_trace(
 
-go.Scatter(
+        go.Scatter(
 
-x=plot["time"],
+            x=plot["time"],
 
-y=plot["temperature"],
+            y=plot["temperature"],
 
-fill="tozeroy"
+            fill="tozeroy"
 
-)
+        )
 
-)
+    )
 
     st.plotly_chart(
-fig,
-use_container_width=True
-)
+        fig,
+        use_container_width=True
+    )
 
 with right:
 
     st.subheader(
-        "💧 Humidity Trend"
+        "💧 Humidity"
     )
 
     fig2=go.Figure()
 
     fig2.add_trace(
 
-go.Scatter(
+        go.Scatter(
 
-x=plot["time"],
+            x=plot["time"],
 
-y=plot["humidity"],
+            y=plot["humidity"],
 
-fill="tozeroy"
+            fill="tozeroy"
 
-)
+        )
 
-)
+    )
 
     st.plotly_chart(
-fig2,
-use_container_width=True
-)
+        fig2,
+        use_container_width=True
+    )
 
-
-# =====================================
+# ====================================
 # MAP
-# =====================================
+# ====================================
 
 st.subheader(
 "🗺 Urban Digital Twin"
 )
 
 m=folium.Map(
-
-location=[
-20.5,
-78.9
-],
-
+location=[20.5,78.9],
 zoom_start=5
-
 )
 
-folium.CircleMarker(
-
-location=[
-16.5,
-80.64
-],
-
-radius=18,
-
-popup=
-recommendation,
-
-fill=True
-
-).add_to(
-m
-)
+folium.Marker(
+location=[16.5,80.64],
+popup=recommendation
+).add_to(m)
 
 st_folium(
 m,
 height=450
 )
 
-
-# =====================================
+# ====================================
 # DATA
-# =====================================
+# ====================================
 
 st.subheader(
 "📄 Live Dataset"
@@ -583,46 +619,40 @@ plot.iloc[::-1],
 use_container_width=True
 )
 
-# =====================================
+# ====================================
 # EXPORT
-# =====================================
+# ====================================
 
 st.subheader(
-    "⬇ Export Dashboard"
+"⬇ Export Dashboard"
 )
 
-file, mime, ext = export_data(
-    plot
+file,mime,ext=export_data(
+plot
 )
 
 st.download_button(
-
-    "Download Dashboard Report",
-
-    file,
-
-    f"urbanmind_dashboard{ext}",
-
-    mime,
-
-    use_container_width=True
-
+"Download Dashboard Report",
+file,
+f"urbanmind{ext}",
+mime,
+use_container_width=True
 )
 
-
-# =====================================
+# ====================================
 # SUMMARY
-# =====================================
+# ====================================
 
 st.markdown(
 f"""
+
 ### 📌 Dashboard Summary
 
 - Records → {len(df)}
 - Prediction → {prediction}°C
 - Urban Score → {urban["score"]}
 - Health → {health}%
-- Export → {settings["export"]}
+- Export → {settings.get("export")}
 
 """
 )

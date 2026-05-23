@@ -11,11 +11,14 @@ from streamlit_folium import st_folium
 
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
-
 from utils.settings import (
     apply_theme,
     load_settings,
     export_data
+)
+
+from backend.intelligence.geo_engine import (
+    calculate_risk
 )
 
 # ==================================
@@ -45,14 +48,14 @@ st_autorefresh(
 )
 
 # ==================================
-# UI
+# STYLE
 # ==================================
 
 st.markdown("""
 <style>
 
 .block-container{
-padding-top:.4rem !important;
+padding-top:.4rem!important;
 }
 
 .hero{
@@ -69,20 +72,12 @@ linear-gradient(
 
 color:white;
 
-margin-bottom:24px;
+margin-bottom:25px;
 }
 
 .hero h1{
-font-size:48px;
-}
-
-.hero p{
-font-size:18px;
-}
-
-[data-testid="metric-container"]{
-padding:24px;
-border-radius:20px;
+font-size:56px;
+margin:0;
 }
 
 </style>
@@ -116,16 +111,18 @@ CITY = {
 def load():
 
     try:
+
         return pd.read_csv(
             CSV,
             on_bad_lines="skip"
         )
 
     except:
+
         return pd.DataFrame()
 
 
-df = load()
+df=load()
 
 if df.empty:
 
@@ -135,46 +132,39 @@ if df.empty:
 
     st.stop()
 
+
 # ==================================
 # CLEAN
 # ==================================
 
-for c in [
-"time",
-"temperature",
-"humidity"
-]:
-
-    if c not in df:
-        df[c]=0
-
-if "city" not in df:
-    df["city"]="Unknown"
-
-df["time"]=pd.to_datetime(
-    df["time"],
-    errors="coerce"
-)
-
 df["temperature"]=pd.to_numeric(
-    df["temperature"],
-    errors="coerce"
+df["temperature"],
+errors="coerce"
 )
 
 df["humidity"]=pd.to_numeric(
-    df["humidity"],
-    errors="coerce"
+df["humidity"],
+errors="coerce"
+)
+
+df["time"]=pd.to_datetime(
+df["time"],
+errors="coerce"
 )
 
 df=df.dropna()
 
 df=df.tail(600)
 
+
 # ==================================
 # FILTER
 # ==================================
 
-city=st.selectbox(
+if "city" in df.columns:
+
+    city=st.selectbox(
+
 "🏙 Select City",
 
 ["All Cities"]
@@ -183,24 +173,19 @@ city=st.selectbox(
 
 sorted(
 df["city"]
-.astype(str)
 .unique()
 )
+
 )
 
-if city!="All Cities":
+    if city!="All Cities":
 
-    df=df[
-        df["city"]==city
-    ]
+        df=df[
+            df["city"]
+            ==
+            city
+        ]
 
-if len(df)==0:
-
-    st.warning(
-        "No city records"
-    )
-
-    st.stop()
 
 latest=(
 
@@ -218,40 +203,68 @@ df
 
 )
 
+
 # ==================================
 # SCORE
 # ==================================
 
-latest["health"]=(
-100
--
-(
-latest["temperature"]
--30
-)
-.clip(0)
-*2
--
-(
-latest["humidity"]
--70
-)
-.clip(0)
-)
+health=[]
 
-latest["health"]=latest[
-"health"
-].clip(
+risk=[]
+
+colors=[]
+
+for _,r in latest.iterrows():
+
+    score=max(
+
 0,
-100
+
+100-
+
+max(
+0,
+r["temperature"]-30
+)*2
+
+-
+
+max(
+0,
+r["humidity"]-70
 )
 
-avg=float(
-latest.health.mean()
 )
+
+    health.append(
+score
+)
+
+    level,color=calculate_risk(
+
+r["temperature"],
+
+r["humidity"]
+
+)
+
+    risk.append(
+level
+)
+
+    colors.append(
+color
+)
+
+latest["health"]=health
+latest["risk"]=risk
+latest["color"]=colors
+
+avg=latest.health.mean()
+
 
 # ==================================
-# HEADER
+# HERO
 # ==================================
 
 left,right=st.columns([5,1])
@@ -262,29 +275,35 @@ with left:
 <div class='hero'>
 
 <h1>
-🌍 Geo Intelligence
+🌍 Urban Geo Intelligence
 </h1>
 
-<p>
-Urban Digital Twin • Risk Zones
-</p>
+<h3>
+
+Digital Twin • Risk Zones
+
+</h3>
 
 </div>
 """,
-unsafe_allow_html=True
-)
+unsafe_allow_html=True)
 
 with right:
 
     st.info(
+
 datetime.now(
+
 pytz.timezone(
 "Asia/Kolkata"
 )
+
 ).strftime(
 "%I:%M:%S %p"
 )
+
 )
+
 
 # ==================================
 # KPI
@@ -303,7 +322,7 @@ f"{latest.temperature.mean():.1f}°C"
 )
 
 c.metric(
-"💧 Avg Humidity",
+"💧 Humidity",
 f"{latest.humidity.mean():.1f}%"
 )
 
@@ -312,32 +331,26 @@ d.metric(
 f"{avg:.0f}%"
 )
 
+
 # ==================================
 # MAP
 # ==================================
 
 st.subheader(
-"🗺 Geo Map"
+"🗺 Urban Digital Twin"
 )
 
 m=folium.Map(
+
 location=[21,79],
+
 zoom_start=5
+
 )
 
 for _,r in latest.iterrows():
 
     if r["city"] in CITY:
-
-        color=(
-"green"
-if r["health"]>80
-else
-"orange"
-if r["health"]>60
-else
-"red"
-)
 
         folium.CircleMarker(
 
@@ -350,16 +363,24 @@ radius=18,
 
 fill=True,
 
-fill_opacity=.8,
+fill_color=
+r["color"],
 
-color=color,
+color=
+r["color"],
 
-popup=
-f"""
+popup=f"""
+
 {r["city"]}
 
-Health:
-{r["health"]:.0f}
+🌡 {r["temperature"]:.1f}
+
+💧 {r["humidity"]:.1f}
+
+❤️ {r["health"]:.0f}
+
+⚠ {r["risk"]}
+
 """
 
 ).add_to(
@@ -371,6 +392,7 @@ m,
 height=600
 )
 
+
 # ==================================
 # TABLE
 # ==================================
@@ -381,23 +403,48 @@ ascending=False
 )
 
 st.subheader(
-"🏆 Ranking"
+"🏆 City Ranking"
 )
 
 st.dataframe(
-rank,
+
+rank[[
+
+"city",
+
+"temperature",
+
+"humidity",
+
+"health",
+
+"risk"
+
+]],
+
 use_container_width=True
+
 )
+
 
 # ==================================
 # CHART
 # ==================================
 
+st.subheader(
+"🔥 Health Zones"
+)
+
 fig=px.bar(
+
 rank,
+
 x="city",
+
 y="health",
-color="health"
+
+color="risk"
+
 )
 
 st.plotly_chart(
@@ -405,8 +452,9 @@ fig,
 use_container_width=True
 )
 
+
 # ==================================
-# AI
+# INSIGHT
 # ==================================
 
 st.subheader(
@@ -422,42 +470,57 @@ if avg<60:
 elif avg<80:
 
     st.warning(
-        "Moderate Risk"
+        "Moderate Conditions"
     )
 
 else:
 
     st.success(
-        "Stable Urban Conditions"
+        "Healthy Urban Environment"
     )
+
 
 # ==================================
 # EXPORT
 # ==================================
-
-st.subheader(
-"⬇ Export Geo"
-)
 
 file,mime,ext=export_data(
 rank
 )
 
 st.download_button(
-"Download Geo Report",
+
+"⬇ Export Geo Report",
+
 file,
+
 f"urbanmind_geo{ext}",
+
 mime,
+
 use_container_width=True
+
 )
+
 
 # ==================================
 # SUMMARY
 # ==================================
 
-st.success(f"""
-Cities: {rank.city.nunique()}
-Health: {avg:.0f}%
-Export: {settings["export"]}
-Theme: {settings["theme"]}
-""")
+st.success(
+f"""
+
+Cities:
+{rank.city.nunique()}
+
+Health:
+{avg:.0f}%
+
+Theme:
+{settings["theme"]}
+
+Export:
+{settings["export"]}
+
+"""
+)
