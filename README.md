@@ -1,142 +1,329 @@
-# 🌍 UrbanMind
+<p align="center">
+  <img src="assets/dashboard.png" width="100%">
+</p>
 
-### Real-Time Big Data Platform for Urban Intelligence and Predictive Decision Support
+<h1 align="center">🌍 UrbanMind</h1>
 
-![Python](https://img.shields.io/badge/Python-3.9-blue)
-![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green)
-![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red)
-![Docker](https://img.shields.io/badge/Docker-Enabled-blue)
+<h3 align="center">
+Real-Time Big Data Platform for Urban Intelligence and Predictive Decision Support
+</h3>
+
+<p align="center">
+
+![Python](https://img.shields.io/badge/Python-3.9-blue?style=for-the-badge)
+![FastAPI](https://img.shields.io/badge/FastAPI-Backend-green?style=for-the-badge)
+![Streamlit](https://img.shields.io/badge/Streamlit-Dashboard-red?style=for-the-badge)
+![Docker](https://img.shields.io/badge/Docker-Enabled-blue?style=for-the-badge)
+![Machine Learning](https://img.shields.io/badge/AI-Powered-purple?style=for-the-badge)
+
+</p>
 
 ---
 
 # 🚀 Overview
 
-UrbanMind is an AI-powered Smart City Intelligence Platform for collecting, analyzing, predicting, and visualizing urban environmental conditions.
+UrbanMind is an AI-powered Smart City Intelligence Platform designed to collect, process, analyze, predict, and visualize urban environmental intelligence using Big Data and Machine Learning.
 
-Features include:
+The platform integrates:
 
-- 📊 Analytics Dashboard
-- 🔮 Forecast Intelligence
-- 🌍 Geo Intelligence
-- 🖥 Monitor Center
-- 🤖 Urban AI Assistant
-- 📈 Machine Learning Prediction
-- 🐳 Docker Deployment
-
----
-
-# ✨ Modules
-
-## 📊 Dashboard
-- Urban score
-- Temperature analysis
-- Humidity monitoring
-
-## 🔮 Forecast
-- AI prediction
-- Risk alerts
-- Forecast confidence
-
-## 🌍 Geo
-- Digital Twin
-- Interactive map
-
-## 🖥 Monitor
-- Model health
-- System monitoring
-
-## 🤖 Assistant
-- Weather insights
-- Forecast summaries
+- Real-time analytics
+- Forecast intelligence
+- Monitoring dashboards
+- Geospatial insights
+- AI assistance
+- Predictive modeling
+- Production-ready deployment
 
 ---
 
-# 🏗 Architecture
+# ✨ Features
 
-User
+## 📊 Analytics Dashboard
+Analyze environmental and urban metrics in real time.
 
-↓
+## 🔮 Forecast Intelligence
+Generate weather and urban predictions.
 
-Streamlit Dashboard
+## 🌍 Geo Intelligence
+Visualize locations and urban conditions.
 
-↓
+## 🖥 Monitor Center
+Monitor platform health and operations.
 
-FastAPI API
+## 🤖 Urban AI Assistant
+Interactive assistant for insights.
 
-↓
+## 🧠 Machine Learning Prediction
+AI-driven predictive analysis.
 
-ML Model
-
-↓
-
-Dataset
-
----
-
-# 🧠 Tech Stack
-
-Frontend:
-- Streamlit
-
-Backend:
-- FastAPI
-
-ML:
-- Scikit-learn
-
-Visualization:
-- Plotly
-- Folium
-
-Deployment:
-- Docker
+## 🐳 Docker Deployment
+Containerized production architecture.
 
 ---
 
-# 📂 Structure
+# 🏗 System Architecture
 
-UrbanMind/
+```text
+             ┌────────────────────┐
+             │     Frontend       │
+             │     Streamlit      │
+             └─────────┬──────────┘
+                       │
+                       ▼
 
-├── backend/
+             ┌────────────────────┐
+             │     FastAPI API    │
+             │    Backend Layer   │
+             └─────────┬──────────┘
+                       │
+                       ▼
 
-├── frontend/
+             ┌────────────────────┐
+             │ Machine Learning   │
+             │ Prediction Engine  │
+             └─────────┬──────────┘
+                       │
+                       ▼
 
-├── models/
-
-├── assets/
-
-├── data/
-
-├── docs/
-
-└── tests/
+             ┌────────────────────┐
+             │ Data Processing    │
+             │ Urban Intelligence │
+             └────────────────────┘
+```
 
 ---
 
-# ⚙ Run
+# 📸 Platform Screenshots
 
-Backend:
+## Dashboard
+
+<img src="assets/dashboard.png">
+
+---
+
+## Analytics
+
+<img src="assets/analytics.png">
+
+---
+
+## Forecast
+
+<img src="assets/forecast.png">
+
+---
+
+## Geo Intelligence
+
+<img src="assets/geo.png">
+
+---
+
+## Monitor Center
+
+<img src="assets/monitor.png">
+
+---
+
+## Urban AI Assistant
+
+<img src="assets/assistant.png">
+
+---
+
+## Reports
+
+<img src="assets/reports.png">
+
+---
+
+## Settings
+
+<img src="assets/settings.png">
+
+---
+
+# ⚙ Installation
+
+## Clone Repository
+
+```bash
+git clone https://github.com/RevanthSettipalli/UrbanMind.git
+```
+
+Move into project:
+
+```bash
+cd UrbanMind
+```
+
+Create environment:
+
+```bash
+python -m venv venv
+```
+
+Activate environment:
+
+Mac/Linux
+
+```bash
+source venv/bin/activate
+```
+
+Windows
+
+```bash
+venv\Scripts\activate
+```
+
+Install packages:
+
+```bash
+pip install -r requirements.txt
+```
+
+---
+
+# ▶ Run Backend
 
 ```bash
 uvicorn backend.api.app:app --reload
 ```
 
-Frontend:
+API:
 
-```bash
-streamlit run frontend/home.py
+```text
+http://localhost:8000
+```
+
+Swagger:
+
+```text
+http://localhost:8000/docs
 ```
 
 ---
 
-# 📈 Results
+# ▶ Run Frontend
 
-MAE: 3.82
+```bash
+streamlit run frontend/app.py
+```
 
-R²: 0.267
+Open:
+
+```text
+http://localhost:8502
+```
+
+---
+
+# 🧠 Machine Learning Model
+
+### Algorithm
+
+```text
+RandomForestRegressor
+```
+
+### Current Metrics
+
+```text
+MAE : 3.821
+R²  : 0.267
+```
+
+### Model Output
+
+- Temperature Prediction
+- Forecast Insights
+- Urban Health Analysis
+- Recommendation Engine
+
+---
+
+# 📂 Project Structure
+
+```text
+UrbanMind
+│
+├── assets/
+│
+├── backend/
+│   ├── api/
+│   ├── auth/
+│   ├── ml/
+│
+├── frontend/
+│   ├── pages/
+│   ├── utils/
+│
+├── data/
+│
+├── docs/
+│
+├── tests/
+│
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+├── README.md
+```
+
+---
+
+# 🐳 Docker
+
+Build:
+
+```bash
+docker-compose build
+```
+
+Run:
+
+```bash
+docker-compose up
+```
+
+---
+
+# 🔥 Future Enhancements
+
+- Real-time streaming
+- Advanced forecasting
+- LLM integration
+- Kubernetes deployment
+- Mobile dashboard
+- Multi-city intelligence
+
+---
+
+# 📈 Project Goals
+
+UrbanMind aims to become an intelligent urban analytics ecosystem capable of:
+
+✔ Predictive Decision Support  
+✔ Smart Monitoring  
+✔ AI Insights  
+✔ Big Data Analytics  
+✔ Scalable Deployment
 
 ---
 
 # 👨‍💻 Author
 
-Revanth Settipalli
+### Revanth Settipalli
+
+GitHub:
+
+https://github.com/RevanthSettipalli
+
+---
+
+<p align="center">
+
+⭐ Star this repository if you like UrbanMind ⭐
+
+</p>
