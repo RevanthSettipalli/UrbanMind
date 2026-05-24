@@ -7,7 +7,9 @@ import pytz
 import json
 import sys
 
+
 from pathlib import Path
+from frontend.utils.city_selector import city_filter
 from datetime import datetime
 from streamlit_folium import st_folium
 from streamlit_autorefresh import st_autorefresh
@@ -177,7 +179,11 @@ def load_alerts():
 
 
 df = load_data()
+
+df, selected_city = city_filter(df)
+
 model = load_model()
+
 alerts = load_alerts()
 
 # ====================================
