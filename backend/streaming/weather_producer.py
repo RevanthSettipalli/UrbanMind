@@ -1,168 +1,76 @@
-import pandas as pd
-import random
+import json
 import time
-
+import random
 from datetime import datetime
-from pathlib import Path
+from kafka import KafkaProducer
 
+BROKER = "127.0.0.1:19092"
+TOPIC = "weather"
 
-# ===================================
-# PATH
-# ===================================
+cities = [
+    "Delhi",
+    "Mumbai",
+    "Hyderabad",
+    "Chennai",
+    "Bangalore",
+    "Kolkata"
+]
 
-ROOT = Path(__file__).resolve().parents[2]
+conditions = [
+    "Sunny",
+    "Cloudy",
+    "Rainy",
+    "Windy"
+]
 
-CSV = ROOT / "data" / "processed_weather.csv"
+producer = None
 
+print("🚀 STARTING PRODUCER")
 
-# ===================================
-# CITY BASE WEATHER
-# ===================================
+while producer is None:
+    try:
+        producer = KafkaProducer(
+            bootstrap_servers=[BROKER],
+            value_serializer=lambda x: json.dumps(x).encode(),
+            request_timeout_ms=10000
+        )
 
-CITY_BASE = {
+        print("✅ PRODUCER CONNECTED")
 
-    "Vijayawada": 34,
+    except Exception as e:
+        print("WAITING FOR KAFKA...")
+        print(e)
+        time.sleep(3)
 
-    "Hyderabad": 32,
-
-    "Bangalore": 26,
-
-    "Chennai": 33,
-
-    "Mumbai": 29,
-
-    "Delhi": 31
-}
-
-
-cities = list(
-    CITY_BASE.keys()
-)
-
-
-# ===================================
-# GENERATOR
-# ===================================
+print("📡 PRODUCER RUNNING")
 
 while True:
 
-    city = random.choice(
-        cities
-    )
-
-
-    humidity = random.randint(
-        35,
-        90
-    )
-
-
-    hour = datetime.now().hour
-
-
-    base_temp = CITY_BASE[
-        city
-    ]
-
-
-    # Day/Night Effect
-
-    if 11 <= hour <= 16:
-
-        sunlight = 4
-
-    elif 17 <= hour <= 20:
-
-        sunlight = 2
-
-    else:
-
-        sunlight = -2
-
-
-    # Realistic relation
-
-    temperature = (
-
-        base_temp
-
-        +
-
-        sunlight
-
-        +
-
-        ((100 - humidity) * 0.12)
-
-        +
-
-        random.uniform(
-            -1.5,
-            1.5
-        )
-
-    )
-
-
-    temperature = round(
-        temperature,
-        1
-    )
-
-
-    row = {
-
-        "time":
-        datetime.now(),
-
-        "city":
-        city,
-
-        "temperature":
-        temperature,
-
-        "humidity":
-        humidity
+    weather = {
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "city": random.choice(cities),
+        "temperature": round(random.uniform(20, 40), 1),
+        "humidity": random.randint(40, 90),
+        "condition": random.choice(conditions)
     }
 
+    try:
 
-    df = pd.DataFrame(
-        [row]
-    )
-
-
-    if CSV.exists():
-
-        df.to_csv(
-
-            CSV,
-
-            mode="a",
-
-            index=False,
-
-            header=False
+        producer.send(
+            TOPIC,
+            weather
         )
 
-    else:
+        producer.flush()
 
-        df.to_csv(
+        print("\n📤 SENT")
+        print(weather)
 
-            CSV,
+        time.sleep(3)
 
-            index=False
-        )
+    except Exception as e:
 
+        print("SEND FAILED")
+        print(e)
 
-    print()
-
-    print("🌍 New Weather Record")
-
-    print(row)
-
-    print()
-
-
-    time.sleep(
-        2
-    )
+        time.sleep(3)

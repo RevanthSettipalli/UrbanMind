@@ -1,0 +1,25 @@
+import sqlite3
+
+conn = sqlite3.connect("backend/auth/users.db")
+
+cur = conn.cursor()
+
+cur.execute("""
+CREATE TABLE IF NOT EXISTS users(
+
+id INTEGER PRIMARY KEY AUTOINCREMENT,
+
+username TEXT,
+
+email TEXT UNIQUE,
+
+password TEXT
+
+)
+""")
+
+conn.commit()
+
+conn.close()
+
+print("Database Ready")

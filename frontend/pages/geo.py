@@ -93,15 +93,15 @@ ROOT = Path(__file__).resolve().parents[2]
 CSV = ROOT / "data" / "processed_weather.csv"
 
 CITY = {
-
-"Delhi":[28.61,77.20],
-"Mumbai":[19.07,72.87],
-"Hyderabad":[17.38,78.48],
-"Chennai":[13.08,80.27],
-"Bangalore":[12.97,77.59],
-"Vijayawada":[16.50,80.64]
-
+    "Delhi":[28.61,77.20],
+    "Mumbai":[19.07,72.87],
+    "Hyderabad":[17.38,78.48],
+    "Chennai":[13.08,80.27],
+    "Bangalore":[12.97,77.59],
+    "Kolkata":[22.57,88.36]
 }
+
+EXPECTED_CITIES = list(CITY.keys())
 
 # ==================================
 # LOAD
@@ -112,17 +112,19 @@ def load():
 
     try:
 
-        return pd.read_csv(
+        df = pd.read_csv(
             CSV,
             on_bad_lines="skip"
         )
 
-    except:
+        return df
+
+    except Exception:
 
         return pd.DataFrame()
 
 
-df=load()
+df = load()
 
 if df.empty:
 
@@ -132,142 +134,189 @@ if df.empty:
 
     st.stop()
 
-
 # ==================================
 # CLEAN
 # ==================================
 
-df["temperature"]=pd.to_numeric(
-df["temperature"],
-errors="coerce"
+if "temperature" in df.columns:
+
+    df["temperature"] = pd.to_numeric(
+        df["temperature"],
+        errors="coerce"
+    )
+
+if "humidity" in df.columns:
+
+    df["humidity"] = pd.to_numeric(
+        df["humidity"],
+        errors="coerce"
+    )
+
+if "time" in df.columns:
+
+    df["time"] = pd.to_datetime(
+        df["time"],
+        errors="coerce",
+        format="ISO8601"
+    )
+
+else:
+
+    df["time"] = pd.Timestamp.now()
+
+# FIX CITY ISSUE
+
+if "city" not in df.columns:
+
+    if "location" in df.columns:
+
+        df["city"] = df["location"]
+
+    elif "name" in df.columns:
+
+        df["city"] = df["name"]
+
+    else:
+
+        df["city"] = "Unknown"
+
+df["city"] = (
+    df["city"]
+    .fillna("Unknown")
+    .astype(str)
 )
 
-df["humidity"]=pd.to_numeric(
-df["humidity"],
-errors="coerce"
+df = df.dropna(
+    subset=[
+        "temperature",
+        "humidity",
+        "time"
+    ]
 )
 
-df["time"]=pd.to_datetime(
-df["time"],
-errors="coerce"
-)
+# GUARANTEE ALL CITIES
 
-df=df.dropna()
+for c in EXPECTED_CITIES:
 
-df=df.tail(600)
+    if c not in df["city"].values:
 
+        df.loc[len(df)] = {
+            "city": c,
+            "temperature": 0,
+            "humidity": 0,
+            "time": pd.Timestamp.now()
+        }
+
+df = df.tail(600)
 
 # ==================================
 # FILTER
 # ==================================
 
-if "city" in df.columns:
+city = st.selectbox(
 
-    city=st.selectbox(
+    "🏙 Select City",
 
-"🏙 Select City",
+    ["All Cities"]
 
-["All Cities"]
+    +
 
-+
-
-sorted(
-df["city"]
-.unique()
-)
+    sorted(
+        df["city"]
+        .unique()
+    )
 
 )
 
-    if city!="All Cities":
+if city != "All Cities":
 
-        df=df[
-            df["city"]
-            ==
-            city
-        ]
+    df = df[
+        df["city"]
+        ==
+        city
+    ]
 
+latest = (
 
-latest=(
+    df
 
-df
+    .sort_values(
+        "time"
+    )
 
-.sort_values(
-"time"
+    .groupby(
+        "city"
+    )
+
+    .tail(1)
+
 )
-
-.groupby(
-"city"
-)
-
-.tail(1)
-
-)
-
 
 # ==================================
 # SCORE
 # ==================================
 
-health=[]
+health = []
 
-risk=[]
+risk = []
 
-colors=[]
+colors = []
 
-for _,r in latest.iterrows():
+for _, r in latest.iterrows():
 
-    score=max(
+    score = max(
 
-0,
+        0,
 
-100-
+        100
 
-max(
-0,
-r["temperature"]-30
-)*2
+        -
 
--
+        max(
+            0,
+            r["temperature"] - 30
+        ) * 2
 
-max(
-0,
-r["humidity"]-70
-)
+        -
 
-)
+        max(
+            0,
+            r["humidity"] - 70
+        )
+
+    )
 
     health.append(
-score
-)
+        score
+    )
 
-    level,color=calculate_risk(
+    level, color = calculate_risk(
 
-r["temperature"],
+        r["temperature"],
 
-r["humidity"]
+        r["humidity"]
 
-)
+    )
 
     risk.append(
-level
-)
+        level
+    )
 
     colors.append(
-color
-)
+        color
+    )
 
-latest["health"]=health
-latest["risk"]=risk
-latest["color"]=colors
+latest["health"] = health
+latest["risk"] = risk
+latest["color"] = colors
 
-avg=latest.health.mean()
-
+avg = latest.health.mean()
 
 # ==================================
 # HERO
 # ==================================
 
-left,right=st.columns([5,1])
+left, right = st.columns([5,1])
 
 with left:
 
@@ -292,85 +341,79 @@ with right:
 
     st.info(
 
-datetime.now(
+        datetime.now(
 
-pytz.timezone(
-"Asia/Kolkata"
-)
+            pytz.timezone(
+                "Asia/Kolkata"
+            )
 
-).strftime(
-"%I:%M:%S %p"
-)
+        ).strftime(
+            "%I:%M:%S %p"
+        )
 
-)
-
+    )
 
 # ==================================
 # KPI
 # ==================================
 
-a,b,c,d=st.columns(4)
+a,b,c,d = st.columns(4)
 
 a.metric(
-"🏙 Cities",
-latest.city.nunique()
+    "🏙 Cities",
+    latest.city.nunique()
 )
 
 b.metric(
-"🌡 Avg Temp",
-f"{latest.temperature.mean():.1f}°C"
+    "🌡 Avg Temp",
+    f"{latest.temperature.mean():.1f}°C"
 )
 
 c.metric(
-"💧 Humidity",
-f"{latest.humidity.mean():.1f}%"
+    "💧 Humidity",
+    f"{latest.humidity.mean():.1f}%"
 )
 
 d.metric(
-"❤️ Health",
-f"{avg:.0f}%"
+    "❤️ Health",
+    f"{avg:.0f}%"
 )
-
 
 # ==================================
 # MAP
 # ==================================
 
 st.subheader(
-"🗺 Urban Digital Twin"
+    "🗺 Urban Digital Twin"
 )
 
-m=folium.Map(
+m = folium.Map(
 
-location=[21,79],
+    location=[21,79],
 
-zoom_start=5
+    zoom_start=5
 
 )
 
-for _,r in latest.iterrows():
+for _, r in latest.iterrows():
 
     if r["city"] in CITY:
 
         folium.CircleMarker(
 
-location=
-CITY[
-r["city"]
-],
+            location=CITY[
+                r["city"]
+            ],
 
-radius=18,
+            radius=18,
 
-fill=True,
+            fill=True,
 
-fill_color=
-r["color"],
+            fill_color=r["color"],
 
-color=
-r["color"],
+            color=r["color"],
 
-popup=f"""
-
+            popup=f"""
 {r["city"]}
 
 🌡 {r["temperature"]:.1f}
@@ -380,94 +423,83 @@ popup=f"""
 ❤️ {r["health"]:.0f}
 
 ⚠ {r["risk"]}
-
 """
 
-).add_to(
-m
-)
+        ).add_to(
+            m
+        )
 
 st_folium(
-m,
-height=600
+    m,
+    height=600
 )
-
 
 # ==================================
 # TABLE
 # ==================================
 
-rank=latest.sort_values(
-"health",
-ascending=False
+rank = latest.sort_values(
+    "health",
+    ascending=False
 )
 
 st.subheader(
-"🏆 City Ranking"
+    "🏆 City Ranking"
 )
 
 st.dataframe(
 
-rank[[
+    rank[[
+        "city",
+        "temperature",
+        "humidity",
+        "health",
+        "risk"
+    ]],
 
-"city",
-
-"temperature",
-
-"humidity",
-
-"health",
-
-"risk"
-
-]],
-
-use_container_width=True
+    width="stretch"
 
 )
-
 
 # ==================================
 # CHART
 # ==================================
 
 st.subheader(
-"🔥 Health Zones"
+    "🔥 Health Zones"
 )
 
-fig=px.bar(
+fig = px.bar(
 
-rank,
+    rank,
 
-x="city",
+    x="city",
 
-y="health",
+    y="health",
 
-color="risk"
+    color="risk"
 
 )
 
 st.plotly_chart(
-fig,
-use_container_width=True
+    fig
 )
-
 
 # ==================================
 # INSIGHT
 # ==================================
 
 st.subheader(
-"🧠 Geo Insight"
+    "🧠 Geo Insight"
 )
 
-if avg<60:
+if avg < 60:
 
     st.error(
         "High Urban Risk"
     )
 
-elif avg<80:
+elif avg < 80:
 
     st.warning(
         "Moderate Conditions"
@@ -479,29 +511,25 @@ else:
         "Healthy Urban Environment"
     )
 
-
 # ==================================
 # EXPORT
 # ==================================
 
-file,mime,ext=export_data(
-rank
+file, mime, ext = export_data(
+    rank
 )
 
 st.download_button(
 
-"⬇ Export Geo Report",
+    "⬇ Export Geo Report",
 
-file,
+    file,
 
-f"urbanmind_geo{ext}",
+    f"urbanmind_geo{ext}",
 
-mime,
-
-use_container_width=True
+    mime
 
 )
-
 
 # ==================================
 # SUMMARY
@@ -509,18 +537,12 @@ use_container_width=True
 
 st.success(
 f"""
+Cities: {rank.city.nunique()}
 
-Cities:
-{rank.city.nunique()}
+Health: {avg:.0f}%
 
-Health:
-{avg:.0f}%
+Theme: {settings["theme"]}
 
-Theme:
-{settings["theme"]}
-
-Export:
-{settings["export"]}
-
+Export: {settings["export"]}
 """
 )

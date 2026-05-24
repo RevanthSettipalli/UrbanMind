@@ -1,135 +1,79 @@
-from kafka import KafkaConsumer
+import csv
 import json
-import pandas as pd
 import os
-from pathlib import Path
+import time
 
+from kafka import KafkaConsumer
 
-# ==========================
-# PATH
-# ==========================
+BROKER = "127.0.0.1:19092"
+TOPIC = "weather"
 
-ROOT = Path(__file__).resolve().parents[2]
+CSV = "data/weather_stream.csv"
 
-CSV = ROOT / "data" / "processed_weather.csv"
+os.makedirs("data", exist_ok=True)
 
+print("🚀 STARTING CONSUMER")
 
-# ==========================
-# KAFKA
-# ==========================
+consumer = None
 
-consumer = KafkaConsumer(
-
-    "weather",
-
-    bootstrap_servers="urbanmind-kafka:9092",
-
-    auto_offset_reset="latest",
-
-    value_deserializer=lambda x:
-    json.loads(
-        x.decode("utf-8")
-    )
-)
-
-print("Consumer Started")
-
-
-# ==========================
-# CREATE CSV
-# ==========================
-
-if not CSV.exists():
-
-    pd.DataFrame(
-
-        columns=[
-
-            "time",
-
-            "city",
-
-            "temperature",
-
-            "humidity"
-
-        ]
-
-    ).to_csv(
-
-        CSV,
-
-        index=False
-
-    )
-
-
-# ==========================
-# CONSUME
-# ==========================
-
-for message in consumer:
+while consumer is None:
 
     try:
 
-        data = message.value
-
-        row = pd.DataFrame([{
-
-            "time":
-            data.get(
-                "timestamp"
+        consumer = KafkaConsumer(
+            TOPIC,
+            bootstrap_servers=[BROKER],
+            value_deserializer=lambda x: json.loads(
+                x.decode()
             ),
-
-            "city":
-            data.get(
-                "city",
-                "Unknown"
-            ),
-
-            "temperature":
-            data.get(
-                "temperature"
-            ),
-
-            "humidity":
-            data.get(
-                "humidity"
-            )
-
-        }])
-
-        row.to_csv(
-
-            CSV,
-
-            mode="a",
-
-            header=False,
-
-            index=False
-
+            auto_offset_reset="latest",
+            consumer_timeout_ms=0
         )
 
-        print("\nWeather Received")
-        print(
-            f"City: {data.get('city')}"
-        )
-
-        print(
-            f"Temp: {data.get('temperature')}°C"
-        )
-
-        print(
-            f"Humidity: {data.get('humidity')}%"
-        )
-
-        print(
-            f"Saved → {CSV}"
-        )
+        print("✅ CONSUMER CONNECTED")
 
     except Exception as e:
 
-        print(
-            f"Error: {e}"
-        )
+        print("WAITING...")
+        print(e)
+
+        time.sleep(3)
+
+print("📡 CONSUMER RUNNING")
+
+with open(
+    CSV,
+    "a",
+    newline=""
+) as f:
+
+    writer = csv.writer(f)
+
+    if os.stat(CSV).st_size == 0:
+
+        writer.writerow([
+            "timestamp",
+            "city",
+            "temperature",
+            "humidity",
+            "condition"
+        ])
+
+    for msg in consumer:
+
+        row = msg.value
+
+        print("\n📥 RECEIVED")
+        print(row)
+
+        writer.writerow([
+            row["timestamp"],
+            row["city"],
+            row["temperature"],
+            row["humidity"],
+            row["condition"]
+        ])
+
+        f.flush()
+
+        print("✅ SAVED")
