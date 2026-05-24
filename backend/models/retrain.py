@@ -6,7 +6,7 @@ from sklearn.linear_model import LinearRegression
 
 print("Model Retraining Started")
 
-DATA = "data/weather_history.csv"
+DATA = "data/processed_weather.csv"
 
 MODEL_DIR = "models/weather"
 MODEL_PATH = "models/weather/weather_model.pkl"

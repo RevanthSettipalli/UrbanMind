@@ -1,7 +1,7 @@
 import pandas as pd
 
 df = pd.read_csv(
-    "data/weather_history.csv"
+    "data/processed_weather.csv"
 )
 
 summary = {

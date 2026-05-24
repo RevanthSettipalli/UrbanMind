@@ -116,7 +116,7 @@ unsafe_allow_html=True)
 
 CSV = ROOT / "data" / "processed_weather.csv"
 
-MODEL = ROOT / "models" / "weather" / "weather_model.pkl"
+MODEL = ROOT / "models" / "weather" / "weather_model.pkl")
 
 
 # =====================================

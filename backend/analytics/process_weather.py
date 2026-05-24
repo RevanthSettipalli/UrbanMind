@@ -1,6 +1,6 @@
 import pandas as pd
 
-df = pd.read_csv("data/weather_history.csv")
+df = pd.read_csv("data/processed_weather.csv")
 
 df["temperature_f"] = (
     df["temperature"] * 9/5

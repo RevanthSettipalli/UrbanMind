@@ -62,7 +62,7 @@ if str(ROOT) not in sys.path:
 # PATHS
 # ====================================
 
-CSV = ROOT / "data" / "weather_history.csv"
+CSV = ROOT / "data" / "processed_weather.csv"
 
 MODEL = (
     ROOT

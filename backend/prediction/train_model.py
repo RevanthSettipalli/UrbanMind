@@ -14,7 +14,7 @@ from sklearn.metrics import r2_score
 
 ROOT = Path(__file__).resolve().parents[2]
 
-DATA = ROOT / "data" / "weather_history.csv"
+DATA = ROOT / "data" / "processed_weather.csv"
 
 MODEL = ROOT / "models" / "weather" / "weather_model.pkl"
 

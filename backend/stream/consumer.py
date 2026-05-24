@@ -5,7 +5,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-CSV = ROOT/"data"/"weather_history.csv"
+CSV = ROOT/"data"/"processed_weather.csv"
 
 
 while True:
