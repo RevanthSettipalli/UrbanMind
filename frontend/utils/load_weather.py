@@ -10,63 +10,70 @@ CSV = ROOT / "data" / "processed_weather.csv"
 def load_weather():
 
     try:
-
         df = pd.read_csv(
             CSV,
             on_bad_lines="skip"
         )
 
-    except:
-
+    except Exception as e:
+        print(f"CSV Load Error: {e}")
         return pd.DataFrame()
 
+    # Stop if empty
+    if df.empty:
+        return df
 
+    # Clean column names
     df.columns = [
-
-        str(c)
-        .strip()
-        .lower()
-
+        str(c).strip().lower()
         for c in df.columns
     ]
 
-
-    if "city" not in df.columns:
-
-        df["city"] = "Unknown"
-
-
-    for col in [
-
+    # Create required columns if missing
+    required = [
+        "city",
         "temperature",
-
         "humidity"
+    ]
 
-    ]:
+    for col in required:
 
         if col not in df.columns:
 
-            df[col] = 0
+            if col == "city":
+                df[col] = "Unknown"
 
+            else:
+                df[col] = 0
 
+    # Convert numeric safely
     df["temperature"] = pd.to_numeric(
         df["temperature"],
         errors="coerce"
-    )
+    ).fillna(0)
 
     df["humidity"] = pd.to_numeric(
         df["humidity"],
         errors="coerce"
+    ).fillna(0)
+
+    # Parse time safely
+    if "time" in df.columns:
+
+        try:
+
+            df["time"] = pd.to_datetime(
+                df["time"],
+                errors="coerce",
+                infer_datetime_format=True
+            )
+
+        except Exception:
+            pass
+
+    # Remove only fully empty rows
+    df = df.dropna(
+        how="all"
     )
 
-    try:
-
-        df["time"] = pd.to_datetime(
-            df["time"]
-        )
-
-    except:
-        pass
-
-
-    return df.dropna()
+    return df
