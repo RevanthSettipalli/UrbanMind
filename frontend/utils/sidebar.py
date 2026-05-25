@@ -220,7 +220,9 @@ unsafe_allow_html=True
             "🚪 Logout",
             use_container_width=True
         ):
-            st.session_state.clear()
+            if "user" in st.session_state:
+                del st.session_state["user"]
+
             try:
                 st.switch_page(
                     "frontend/pages/login.py"
