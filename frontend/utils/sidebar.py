@@ -192,37 +192,26 @@ unsafe_allow_html=True
 )
 
         pages = [
-
-("📊 Dashboard","pages/dashboard.py"),
-
-("📈 Analytics","pages/analytics.py"),
-
-("🔮 Forecast","pages/forecast.py"),
-
-("🌍 Geo","pages/geo.py"),
-
-("🖥 Monitor","pages/monitor.py"),
-
-("🤖 Assistant","pages/assistant.py"),
-
-("📑 Reports","pages/reports.py"),
-
-("⚙️ Settings","pages/settings.py"),
-
-("ℹ️ About","pages/about.py")
-
-]
+            ("📊 Dashboard", "frontend/pages/dashboard.py"),
+            ("📈 Analytics", "frontend/pages/analytics.py"),
+            ("🔮 Forecast", "frontend/pages/forecast.py"),
+            ("🌍 Geo", "frontend/pages/geo.py"),
+            ("🖥 Monitor", "frontend/pages/monitor.py"),
+            ("🤖 Assistant", "frontend/pages/assistant.py"),
+            ("📑 Reports", "frontend/pages/reports.py"),
+            ("⚙️ Settings", "frontend/pages/settings.py"),
+            ("ℹ️ About", "frontend/pages/about.py")
+        ]
 
         for title, page in pages:
-
             if st.button(
                 title,
                 use_container_width=True
             ):
-
-                st.switch_page(
-                    page
-                )
+                try:
+                    st.switch_page(page)
+                except Exception:
+                    st.rerun()
 
         st.markdown(
 '<div class="logout">',
@@ -233,12 +222,13 @@ unsafe_allow_html=True
             "🚪 Logout",
             use_container_width=True
         ):
-
             st.session_state.clear()
-
-            st.switch_page(
-                "pages/login.py"
-            )
+            try:
+                st.switch_page(
+                    "frontend/pages/login.py"
+                )
+            except Exception:
+                st.rerun()
 
         st.markdown(
 "</div>",
