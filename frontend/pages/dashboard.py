@@ -66,6 +66,7 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+LIVE_CSV = ROOT / "data" / "weather_stream.csv"
 CSV = ROOT / "data" / "processed_weather.csv"
 
 MODEL = (
@@ -123,13 +124,18 @@ except:
 # LOAD
 # ====================================
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=2)
 def load_data():
 
     try:
 
-        if CSV.exists():
+        if LIVE_CSV.exists():
+            return pd.read_csv(
+                LIVE_CSV,
+                on_bad_lines="skip"
+            )
 
+        if CSV.exists():
             return pd.read_csv(
                 CSV,
                 on_bad_lines="skip"
@@ -181,25 +187,25 @@ df = load_data()
 
 if df.empty:
 
-    st.info("No live stream available. Showing sample data.")
+    st.warning("Waiting for live stream data...")
 
     try:
-        if os.path.exists("data/weather_history.csv"):
-            df = pd.read_csv("data/weather_history.csv")
 
-        elif os.path.exists("data/weather_stream.csv"):
-            df = pd.read_csv("data/weather_stream.csv")
+        if LIVE_CSV.exists():
+            df = pd.read_csv(LIVE_CSV)
 
-        elif os.path.exists("data/processed_weather.csv"):
-            df = pd.read_csv("data/processed_weather.csv")
+        elif CSV.exists():
+            df = pd.read_csv(CSV)
 
         else:
-            st.warning("No data available yet.")
-            df = pd.DataFrame()
+            st.stop()
 
-    except Exception as e:
-        st.warning(f"Fallback load failed: {e}")
-        df = pd.DataFrame()
+    except Exception:
+        st.stop()
+
+else:
+
+    st.success(f"🟢 Live Stream Connected • {len(df)} records")
 
 if not df.empty:
     df, selected_city = city_filter(df)
