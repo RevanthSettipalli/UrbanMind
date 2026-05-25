@@ -1,3 +1,11 @@
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
@@ -5,16 +13,6 @@ import joblib
 import folium
 import pytz
 import json
-import sys
-
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[2]
-sys.path.append(str(ROOT))
-
-from pathlib import Path
-from datetime import datetime
 
 from streamlit_folium import st_folium
 from streamlit_autorefresh import st_autorefresh
