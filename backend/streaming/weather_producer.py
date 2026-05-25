@@ -1,12 +1,17 @@
 import json
 import time
 import random
+import os
 from datetime import datetime
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
 
-# Docker Kafka hostname
-BROKER = "urbanmind-kafka:9092"
+BROKER = os.getenv(
+    "KAFKA_BOOTSTRAP_SERVERS",
+    "kafka:9092"
+)
+
+TOPIC = "weather"
 TOPIC = "weather"
 
 cities = [
