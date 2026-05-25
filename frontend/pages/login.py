@@ -101,7 +101,7 @@ if st.button("🔐 Login"):
         )
 
         st.switch_page(
-            "pages/dashboard.py"
+            "dashboard.py"
         )
 
     else:
@@ -124,7 +124,7 @@ with c1:
     ):
 
         st.switch_page(
-            "pages/register.py"
+            "register.py"
         )
 
 with c2:
