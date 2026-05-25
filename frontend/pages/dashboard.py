@@ -197,8 +197,8 @@ if df.empty:
             df = pd.DataFrame()
 
     except Exception as e:
-    st.warning(f"Fallback load failed: {e}")
-    df = pd.DataFrame()
+        st.warning(f"Fallback load failed: {e}")
+        df = pd.DataFrame()
 # ====================================
 # CLEAN
 # ====================================
