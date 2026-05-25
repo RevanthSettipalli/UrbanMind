@@ -13,7 +13,7 @@ from datetime import datetime
 from streamlit_folium import st_folium
 from streamlit_autorefresh import st_autorefresh
 
-from utils.city_selector import city_filter
+from frontend.utils.city_selector import city_filter
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
 from utils.settings import (
