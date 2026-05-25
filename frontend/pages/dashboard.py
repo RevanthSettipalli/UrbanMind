@@ -220,14 +220,6 @@ IST = datetime.now(
     )
 )
 
-updated_time = IST.strftime(
-    "%d %b %Y"
-)
-
-updated_clock = IST.strftime(
-    "%I:%M:%S %p"
-).replace(" AM", "AM").replace(" PM", "PM")
-
 current_time = IST.strftime(
     "%I:%M:%S %p"
 ).replace(" AM", "AM").replace(" PM", "PM")
@@ -351,24 +343,21 @@ justify-content:center;
 align-items:center;
 text-align:center;
 padding:18px;
-position:relative;
 ">
 
 <div style="
-font-size:44px;
-margin-top:0px;
-margin-bottom:8px;
+font-size:42px;
+margin-bottom:12px;
 line-height:1;
 ">
 🕒
 </div>
 
 <div style="
-font-size:28px;
+font-size:26px;
 font-weight:800;
 color:#124f9d;
-margin-top:0px;
-line-height:1;
+line-height:1.1;
 white-space:nowrap;
 ">
 {current_time}
