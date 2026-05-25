@@ -7,13 +7,19 @@ import pytz
 import json
 import sys
 
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.append(str(ROOT))
+
 from pathlib import Path
 from datetime import datetime
 
 from streamlit_folium import st_folium
 from streamlit_autorefresh import st_autorefresh
 
-from frontend.utils.city_selector import city_filter
+from utils.city_selector import city_filter
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
 from utils.settings import (
