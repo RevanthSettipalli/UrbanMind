@@ -1,5 +1,4 @@
 import streamlit as st
-from pathlib import Path
 
 
 def render_sidebar():
@@ -211,15 +210,7 @@ unsafe_allow_html=True
                 key=f"nav_{page}",
                 use_container_width=True
             ):
-
-                target = (
-                    Path(__file__).resolve().parents[1]
-                    / "pages"
-                    / f"{page}.py"
-                )
-
-                if target.exists():
-                    st.switch_page(target)
+                st.switch_page(f"frontend/pages/{page}.py")
 
         st.markdown(
 '<div class="logout">',
@@ -231,16 +222,7 @@ unsafe_allow_html=True
             use_container_width=True
         ):
             st.session_state.pop("user", None)
-
-            try:
-                target = (
-                    Path(__file__).resolve().parents[1]
-                    / "pages"
-                    / "login.py"
-                )
-                st.switch_page(target)
-            except Exception:
-                st.rerun()
+            st.switch_page("frontend/pages/login.py")
 
         st.markdown(
 "</div>",
@@ -249,7 +231,6 @@ unsafe_allow_html=True
 
         st.markdown("""
 <div class='footer'>
-
 UrbanMind v2.0
 
 <div class='footer2'>
