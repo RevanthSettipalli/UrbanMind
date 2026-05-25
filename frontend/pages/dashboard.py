@@ -36,7 +36,7 @@ st.set_page_config(
     layout="wide"
 )
 
-require_login()
+# require_login()
 render_sidebar()
 
 st.markdown(
