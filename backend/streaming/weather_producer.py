@@ -3,8 +3,10 @@ import time
 import random
 from datetime import datetime
 from kafka import KafkaProducer
+from kafka.errors import KafkaError
 
-BROKER = "127.0.0.1:19092"
+# Docker Kafka hostname
+BROKER = "urbanmind-kafka:9092"
 TOPIC = "weather"
 
 cities = [
@@ -13,7 +15,11 @@ cities = [
     "Hyderabad",
     "Chennai",
     "Bangalore",
-    "Kolkata"
+    "Kolkata",
+    "Vijayawada",
+    "Pune",
+    "Ahmedabad",
+    "Jaipur"
 ]
 
 conditions = [
@@ -23,54 +29,99 @@ conditions = [
     "Windy"
 ]
 
-producer = None
-
 print("🚀 STARTING PRODUCER")
+
+producer = None
 
 while producer is None:
     try:
+
         producer = KafkaProducer(
             bootstrap_servers=[BROKER],
-            value_serializer=lambda x: json.dumps(x).encode(),
-            request_timeout_ms=10000
+
+            value_serializer=lambda x:
+            json.dumps(x).encode("utf-8"),
+
+            retries=10,
+
+            request_timeout_ms=30000,
+
+            api_version_auto_timeout_ms=30000,
+
+            max_block_ms=60000
         )
 
         print("✅ PRODUCER CONNECTED")
 
     except Exception as e:
-        print("WAITING FOR KAFKA...")
+
+        print("⏳ WAITING FOR KAFKA...")
         print(e)
-        time.sleep(3)
+
+        time.sleep(5)
 
 print("📡 PRODUCER RUNNING")
 
 while True:
 
-    weather = {
-        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-        "city": random.choice(cities),
-        "temperature": round(random.uniform(20, 40), 1),
-        "humidity": random.randint(40, 90),
-        "condition": random.choice(conditions)
-    }
-
     try:
 
-        producer.send(
+        data = {
+            "time":
+            datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+
+            "city":
+            random.choice(
+                cities
+            ),
+
+            "temperature":
+            round(
+                random.uniform(
+                    22,
+                    40
+                ),
+                1
+            ),
+
+            "humidity":
+            random.randint(
+                40,
+                90
+            ),
+
+            "condition":
+            random.choice(
+                conditions
+            )
+        }
+
+        future = producer.send(
             TOPIC,
-            weather
+            value=data
         )
+
+        future.get(timeout=10)
 
         producer.flush()
 
-        print("\n📤 SENT")
-        print(weather)
+        print("📤 SENT")
+        print(data)
 
-        time.sleep(3)
+        time.sleep(2)
+
+    except KafkaError as e:
+
+        print("❌ SEND FAILED")
+        print(e)
+
+        time.sleep(5)
 
     except Exception as e:
 
-        print("SEND FAILED")
+        print("⚠️ ERROR")
         print(e)
 
-        time.sleep(3)
+        time.sleep(5)

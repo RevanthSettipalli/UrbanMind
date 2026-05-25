@@ -21,7 +21,8 @@ services:
     restart: always
 
     depends_on:
-      - zookeeper
+      zookeeper:
+        condition: service_started
 
     ports:
       - "19092:9092"
@@ -35,7 +36,7 @@ services:
 
       KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
 
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:19092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://urbanmind-kafka:9092
 
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
 
@@ -65,7 +66,9 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: admin123
 
+
   producer:
+
     build:
       context: .
 
@@ -74,7 +77,8 @@ services:
     restart: always
 
     depends_on:
-      - kafka
+      kafka:
+        condition: service_started
 
     environment:
       KAFKA_BROKER: urbanmind-kafka:9092
@@ -84,10 +88,11 @@ services:
 
     working_dir: /app
 
-    command: python streaming/weather_producer.py
+    command: python backend/streaming/weather_producer.py
 
 
   consumer:
+
     build:
       context: .
 
@@ -96,7 +101,8 @@ services:
     restart: always
 
     depends_on:
-      - kafka
+      kafka:
+        condition: service_started
 
     environment:
       KAFKA_BROKER: urbanmind-kafka:9092
@@ -106,8 +112,11 @@ services:
 
     working_dir: /app
 
-    command: python streaming/weather_consumer.py
+    command: python backend/streaming/weather_consumer.py
+
+
   urbanmind:
+
     build:
       context: .
 
@@ -116,8 +125,11 @@ services:
     restart: always
 
     depends_on:
-      - kafka
-      - postgres
+      kafka:
+        condition: service_started
+
+      postgres:
+        condition: service_started
 
     ports:
       - "8501:8501"
@@ -131,4 +143,4 @@ services:
 
     working_dir: /app
 
-    command: streamlit run frontend/home.py
+    command: streamlit run frontend/home.py --server.port=8501 --server.address=0.0.0.0

@@ -1,16 +1,24 @@
-import csv
 import json
-import os
 import time
+import pandas as pd
 
+from pathlib import Path
 from kafka import KafkaConsumer
 
-BROKER = "127.0.0.1:19092"
+BROKER = "urbanmind-kafka:9092"
 TOPIC = "weather"
 
-CSV = "data/weather_stream.csv"
+ROOT = Path(__file__).resolve().parents[2]
 
-os.makedirs("data", exist_ok=True)
+STREAM = ROOT / "data" / "weather_stream.csv"
+PROCESSED = ROOT / "data" / "processed_weather.csv"
+HISTORY = ROOT / "data" / "weather_history.csv"
+
+FILES = [
+    STREAM,
+    PROCESSED,
+    HISTORY
+]
 
 print("🚀 STARTING CONSUMER")
 
@@ -22,58 +30,81 @@ while consumer is None:
 
         consumer = KafkaConsumer(
             TOPIC,
-            bootstrap_servers=[BROKER],
-            value_deserializer=lambda x: json.loads(
-                x.decode()
-            ),
-            auto_offset_reset="latest",
-            consumer_timeout_ms=0
+
+            bootstrap_servers=BROKER,
+
+            auto_offset_reset="earliest",
+
+            group_id="urbanmind",
+
+            enable_auto_commit=True,
+
+            value_deserializer=lambda x:
+            json.loads(
+                x.decode("utf-8")
+            )
         )
 
         print("✅ CONSUMER CONNECTED")
 
     except Exception as e:
 
-        print("WAITING...")
+        print("WAITING FOR KAFKA...")
         print(e)
 
-        time.sleep(3)
+        time.sleep(5)
 
 print("📡 CONSUMER RUNNING")
 
-with open(
-    CSV,
-    "a",
-    newline=""
-) as f:
 
-    writer = csv.writer(f)
+for file in FILES:
 
-    if os.stat(CSV).st_size == 0:
+    file.parent.mkdir(
+        parents=True,
+        exist_ok=True
+    )
 
-        writer.writerow([
-            "timestamp",
-            "city",
-            "temperature",
-            "humidity",
-            "condition"
-        ])
+    if not file.exists():
 
-    for msg in consumer:
+        pd.DataFrame(
+            columns=[
+                "time",
+                "city",
+                "temperature",
+                "humidity",
+                "condition"
+            ]
+        ).to_csv(
+            file,
+            index=False
+        )
 
-        row = msg.value
 
-        print("\n📥 RECEIVED")
-        print(row)
+while True:
 
-        writer.writerow([
-            row["timestamp"],
-            row["city"],
-            row["temperature"],
-            row["humidity"],
-            row["condition"]
-        ])
+    try:
 
-        f.flush()
+        msg = next(consumer)
 
-        print("✅ SAVED")
+        data = msg.value
+
+        print("📥 RECEIVED")
+        print(data)
+
+        df = pd.DataFrame([data])
+
+        for file in FILES:
+
+            df.to_csv(
+                file,
+                mode="a",
+                header=False,
+                index=False
+            )
+
+    except Exception as e:
+
+        print("❌ CONSUMER ERROR")
+        print(e)
+
+        time.sleep(2)
