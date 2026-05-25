@@ -61,7 +61,7 @@ if "user" not in st.session_state:
 # =====================
 
 if st.session_state.logged_in:
-    st.switch_page("pages/dashboard.py")
+    st.switch_page("dashboard.py")
 
 
 # =====================
