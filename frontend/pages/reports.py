@@ -39,9 +39,19 @@ settings = load_settings()
 
 from streamlit_autorefresh import st_autorefresh
 
+refresh_rate = max(
+    1,
+    int(
+        settings.get(
+            "refresh_rate",
+            10
+        )
+    )
+)
+
 st_autorefresh(
-    interval=1000,
-    key="reports_live_clock"
+    interval=refresh_rate * 1000,
+    key=f"reports_live_clock_{refresh_rate}"
 )
 
 # =====================================
@@ -115,7 +125,7 @@ CSV = ROOT / "data" / "processed_weather.csv"
 # LOAD
 # =====================================
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=0)
 def load():
 
     try:
@@ -265,31 +275,23 @@ f"{df['humidity'].mean():.1f}%"
 if "city" in df:
 
     report = (
-
         df
-
         .groupby(
             "city"
         )
-
         [
-
             [
                 "temperature",
                 "humidity"
             ]
-
         ]
-
         .mean()
-
         .reset_index()
-
     )
 
 else:
 
-    report = df
+    report = df.copy()
 
 
 st.subheader(
@@ -348,7 +350,7 @@ UrbanMind analysed
 
 records across
 
-{report.city.nunique()}
+{report['city'].nunique() if 'city' in report.columns else 0}
 
 cities.
 

@@ -41,9 +41,19 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+refresh_rate = max(
+    1,
+    int(
+        settings.get(
+            "refresh_rate",
+            10
+        )
+    )
+)
+
 st_autorefresh(
-    interval=1000,
-    key="assistant_live_clock"
+    interval=refresh_rate * 1000,
+    key=f"assistant_live_clock_{refresh_rate}"
 )
 
 
@@ -196,7 +206,7 @@ ROOT = Path(__file__).resolve().parents[2]
 CSV = ROOT/"data"/"processed_weather.csv"
 
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=0)
 def load():
 
     try:
@@ -398,10 +408,10 @@ f"""
 Assistant Ready
 
 Theme:
-{settings["theme"]}
+{settings.get("theme","default")}
 
 Export:
-{settings["export"]}
+{settings.get("export","csv")}
 
 Messages:
 {len(st.session_state.messages)}

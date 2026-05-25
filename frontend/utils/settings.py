@@ -7,14 +7,14 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
-SETTINGS = ROOT / "data" / "settings.json"
+SETTINGS = ROOT / "frontend" / "settings.json"
 
 
 DEFAULT = {
 
     "theme": "Dark",
 
-    "refresh": 10,
+    "refresh_rate": 10,
 
     "notify": True,
 
@@ -29,7 +29,15 @@ def load_settings():
 
         with open(SETTINGS) as f:
 
-            return json.load(f)
+            data = json.load(f)
+
+        if "refresh" in data and "refresh_rate" not in data:
+            data["refresh_rate"] = data.pop("refresh")
+
+        return {
+            **DEFAULT,
+            **data
+        }
 
     except:
 
@@ -58,7 +66,7 @@ def apply_theme():
 
     s = load_settings()
 
-    if s["theme"] == "Dark":
+    if s.get("theme") == "Dark":
 
         return """
 <style>

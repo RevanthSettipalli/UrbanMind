@@ -8,6 +8,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 import plotly.graph_objects as go
 import joblib
@@ -38,7 +39,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# require_login()
+require_login()
 render_sidebar()
 
 st.markdown(
@@ -46,25 +47,28 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+
 settings = load_settings()
+
+refresh_rate = max(
+    1,
+    int(
+        settings.get(
+            "refresh_rate",
+            1
+        )
+    )
+)
 
 # ====================================
 # AUTO REFRESH
 # ====================================
 
 st_autorefresh(
-    interval=1000,
-    key="live_dashboard_clock"
+    interval=refresh_rate * 1000,
+    key=f"live_dashboard_clock_{refresh_rate}"
 )
 
-# ====================================
-# ROOT
-# ====================================
-
-ROOT = Path(__file__).resolve().parents[2]
-
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
 
 LIVE_CSV = ROOT / "data" / "weather_stream.csv"
 CSV = ROOT / "data" / "processed_weather.csv"
@@ -124,7 +128,7 @@ except:
 # LOAD
 # ====================================
 
-@st.cache_data(ttl=2)
+@st.cache_data(ttl=0)
 def load_data():
 
     try:
@@ -234,7 +238,15 @@ df = df.dropna()
 
 city = selected_city
 
-plot = df.tail(40)
+plot = (
+    df
+    if city == "All Cities"
+    else df[
+        df["city"]
+        ==
+        city
+    ]
+).tail(40)
 
 if plot.empty:
     st.warning("No weather records available.")
@@ -361,9 +373,9 @@ Advanced Intelligence • Ranking • Geo Analysis
 
 with right:
 
-    st.markdown(
+    components.html(
         f"""
-<div style="
+<div style='
 background:#dfe8f5;
 height:260px;
 border-radius:22px;
@@ -373,38 +385,49 @@ justify-content:center;
 align-items:center;
 text-align:center;
 padding:18px;
-">
+'>
 
-<div style="
-font-size:42px;
-margin-bottom:12px;
-line-height:1;
-">
-🕒
-</div>
+<div style='font-size:42px;'>🕒</div>
 
-<div style="
+<div
+id='urban_clock'
+style='
 font-size:26px;
 font-weight:800;
 color:#124f9d;
-line-height:1.1;
-white-space:nowrap;
-">
+margin-top:10px;
+'>
 {current_time}
 </div>
 
-<div style="
+<div
+style='
 margin-top:8px;
 font-size:15px;
 color:#5a6572;
-line-height:1;
-">
+'>
 Live Time
 </div>
 
 </div>
-""",
-        unsafe_allow_html=True
+
+<script>
+function tick() {{
+const d = new Date();
+let h = d.getHours();
+const ap = h >= 12 ? 'PM' : 'AM';
+h = h % 12 || 12;
+const m = String(d.getMinutes()).padStart(2,'0');
+const s = String(d.getSeconds()).padStart(2,'0');
+document.getElementById('urban_clock').innerText =
+`${{String(h).padStart(2,'0')}}:${{m}}:${{s}}${{ap}}`;
+}}
+
+tick();
+setInterval(tick,1000);
+</script>
+        """,
+        height=260
     )
 
 # ====================================
@@ -523,64 +546,106 @@ st.subheader(
 )
 
 CITY = {
-
 "Delhi":[28.61,77.20],
-
 "Mumbai":[19.07,72.87],
-
 "Hyderabad":[17.38,78.48],
-
 "Chennai":[13.08,80.27],
-
 "Bangalore":[12.97,77.59],
-
 "Kolkata":[22.57,88.36],
-
 "Vijayawada":[16.50,80.64],
-
 "Pune":[18.52,73.85],
-
 "Ahmedabad":[23.02,72.57],
-
 "Jaipur":[26.91,75.78]
-
 }
 
-coords = CITY.get(
-latest["city"],
-[20.5,78.9]
+rank = (
+    df
+    .groupby("city")
+    .agg({
+        "temperature":"mean",
+        "humidity":"mean"
+    })
+    .round(1)
+    .reset_index()
+)
+
+rank["health"] = rank.apply(
+    lambda r: calculate_score(
+        r["temperature"],
+        r["humidity"],
+        r["temperature"]
+    )["score"],
+    axis=1
+)
+
+rank["risk"] = rank.apply(
+    lambda r:
+    "🔥 Heat Risk"
+    if r["temperature"] >= 40
+    else (
+        "🌧 Flood Risk"
+        if r["humidity"] >= 85
+        else "✅ Stable"
+    ),
+    axis=1
+)
+
+rank["color"] = rank["health"].apply(
+    lambda x:
+    "green"
+    if x >= 90
+    else (
+        "orange"
+        if x >= 75
+        else "red"
+    )
 )
 
 m = folium.Map(
-location=coords,
-zoom_start=8
+location=[21,79],
+zoom_start=5,
+tiles="CartoDB positron"
 )
 
-folium.Marker(
+if city == "All Cities":
+    map_data = rank
+else:
+    map_data = rank[
+        rank["city"] == city
+    ]
 
-location=coords,
+for _, r in map_data.iterrows():
 
-tooltip=
-latest["city"],
+    city_name = str(r["city"])
 
-popup=f"""
-City:
-{latest["city"]}
+    if city_name in CITY:
 
-Temp:
-{latest["temperature"]}
+        folium.CircleMarker(
+            location=CITY[city_name],
+            radius=18,
+            fill=True,
+            fill_opacity=.9,
+            color=r["color"],
+            fill_color=r["color"],
+            tooltip=city_name,
+            popup=f"""
+🏙 {city_name}
 
-Humidity:
-{latest["humidity"]}
+❤️ Health: {r['health']:.0f}
 
-{recommendation}
+🌡 Temp: {r['temperature']:.1f}°C
+
+💧 Humidity: {r['humidity']:.1f}%
+
+⚠ Recommendation:
+{get_recommendation(r['temperature'], r['humidity'])['message']}
 """
-
-).add_to(m)
+        ).add_to(m)
 
 st_folium(
 m,
-height=550
+height=450,
+width="stretch"
 )
 
 # ====================================

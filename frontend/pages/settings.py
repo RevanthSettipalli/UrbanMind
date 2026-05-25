@@ -163,7 +163,7 @@ refresh = st.slider(
 60,
 
 config.get(
-"refresh",
+"refresh_rate",
 10
 )
 
@@ -226,13 +226,13 @@ use_container_width=True
 
     settings = {
 
-        "theme":theme,
+        "theme": theme,
 
-        "refresh":refresh,
+        "refresh_rate": refresh,
 
-        "notify":notify,
+        "notify": notify,
 
-        "export":export
+        "export": export
 
     }
 
@@ -240,8 +240,12 @@ use_container_width=True
         settings
     )
 
+    st.session_state["settings"] = settings
+
+    st.cache_data.clear()
+
     st.success(
-        "Settings Saved Successfully"
+        f"Settings Saved • Refresh set to {refresh}s"
     )
 
     st.rerun()
@@ -280,7 +284,7 @@ with b:
 
         "Refresh",
 
-        f'{config["refresh"]}s'
+        f'{config.get("refresh_rate",10)}s'
 
     )
 

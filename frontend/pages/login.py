@@ -60,8 +60,17 @@ if "user" not in st.session_state:
 # REDIRECT
 # =====================
 
-if st.session_state.logged_in:
-    st.switch_page("pages/dashboard.py")
+if (
+    st.session_state.get("logged_in")
+    or
+    st.session_state.get("user")
+):
+
+    st.session_state["logged_in"] = True
+
+    st.switch_page(
+        "pages/dashboard.py"
+    )
 
 
 # =====================
@@ -93,8 +102,8 @@ if st.button("🔐 Login"):
 
     if user:
 
-        st.session_state.logged_in = True
-        st.session_state.user = user
+        st.session_state["logged_in"] = True
+        st.session_state["user"] = user
 
         st.success(
             f"Welcome {user['username']}"
@@ -134,5 +143,5 @@ with c2:
     ):
 
         st.switch_page(
-            "pages/home.py"
+            "home.py"
         )

@@ -2,18 +2,23 @@ import streamlit as st
 
 
 def require_login():
-    if not st.session_state.get("logged_in", False):
 
-        st.warning("🔐 Login Required")
+    if st.session_state.get("logged_in"):
+        return True
 
-        st.info(
-            "Please open the Login page from the sidebar."
-        )
+    if st.session_state.get("user"):
+        st.session_state["logged_in"] = True
+        return True
 
-        st.stop()
+    st.switch_page("pages/login.py")
 
 
 def logout():
+
+    keep = {}
+
     st.session_state.clear()
 
-    st.rerun()
+    st.session_state.update(keep)
+
+    st.switch_page("pages/login.py")

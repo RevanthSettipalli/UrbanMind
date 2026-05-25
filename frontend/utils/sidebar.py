@@ -1,4 +1,5 @@
 import streamlit as st
+from frontend.utils.auth_guard import logout
 
 
 def render_sidebar():
@@ -210,7 +211,10 @@ unsafe_allow_html=True
                 key=f"nav_{page}",
                 use_container_width=True
             ):
-                st.switch_page(f"pages/{page}.py")
+
+                st.switch_page(
+                    f"pages/{page}.py"
+                )
 
         st.markdown(
 '<div class="logout">',
@@ -221,8 +225,7 @@ unsafe_allow_html=True
             "🚪 Logout",
             use_container_width=True
         ):
-            st.session_state.pop("user", None)
-            st.switch_page("pages/login.py")
+            logout()
 
         st.markdown(
 "</div>",

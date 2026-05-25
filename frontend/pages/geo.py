@@ -50,9 +50,19 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+refresh_rate = max(
+    1,
+    int(
+        settings.get(
+            "refresh_rate",
+            10
+        )
+    )
+)
+
 st_autorefresh(
-    interval=1000,
-    key="geo_live_clock"
+    interval=refresh_rate * 1000,
+    key=f"geo_live_clock_{refresh_rate}"
 )
 
 # ==================================
@@ -92,21 +102,19 @@ margin:0;
 """,
 unsafe_allow_html=True)
 
-# ==================================
-# PATH
-# ==================================
-
-ROOT = Path(__file__).resolve().parents[2]
-
 CSV = ROOT / "data" / "processed_weather.csv"
 
 CITY = {
-    "Delhi":[28.61,77.20],
-    "Mumbai":[19.07,72.87],
-    "Hyderabad":[17.38,78.48],
-    "Chennai":[13.08,80.27],
-    "Bangalore":[12.97,77.59],
-    "Kolkata":[22.57,88.36]
+    "Delhi": [28.61, 77.20],
+    "Mumbai": [19.07, 72.87],
+    "Hyderabad": [17.38, 78.48],
+    "Chennai": [13.08, 80.27],
+    "Bangalore": [12.97, 77.59],
+    "Kolkata": [22.57, 88.36],
+    "Vijayawada": [16.50, 80.64],
+    "Pune": [18.52, 73.85],
+    "Ahmedabad": [23.02, 72.57],
+    "Jaipur": [26.91, 75.78]
 }
 
 EXPECTED_CITIES = list(CITY.keys())
@@ -115,7 +123,7 @@ EXPECTED_CITIES = list(CITY.keys())
 # LOAD
 # ==================================
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=0)
 def load():
 
     try:
@@ -318,7 +326,13 @@ latest["health"] = health
 latest["risk"] = risk
 latest["color"] = colors
 
+
 avg = latest.health.mean()
+
+rank = latest.sort_values(
+    "health",
+    ascending=False
+)
 
 # ==================================
 # TIME
@@ -445,60 +459,47 @@ st.subheader(
 )
 
 m = folium.Map(
-
     location=[21,79],
-
-    zoom_start=5
-
+    zoom_start=5,
+    tiles="CartoDB positron"
 )
 
-for _, r in latest.iterrows():
+for _, r in rank.iterrows():
 
-    if r["city"] in CITY:
+    city_name = str(r["city"])
+
+    if city_name in CITY:
 
         folium.CircleMarker(
-
-            location=CITY[
-                r["city"]
-            ],
-
+            location=CITY[city_name],
             radius=18,
-
             fill=True,
-
-            fill_color=r["color"],
-
+            fill_opacity=.9,
             color=r["color"],
-
+            fill_color=r["color"],
+            tooltip=city_name,
             popup=f"""
-{r["city"]}
+🏙 {city_name}
 
-🌡 {r["temperature"]:.1f}
+❤️ Health: {r['health']:.0f}
 
-💧 {r["humidity"]:.1f}
+🌡 Temp: {r['temperature']:.1f}°C
 
-❤️ {r["health"]:.0f}
+💧 Humidity: {r['humidity']:.1f}%
 
-⚠ {r["risk"]}
+⚠ Risk: {r['risk']}
 """
-
-        ).add_to(
-            m
-        )
+        ).add_to(m)
 
 st_folium(
     m,
-    height=600
+    height=450,
+    width="stretch"
 )
 
 # ==================================
 # TABLE
 # ==================================
-
-rank = latest.sort_values(
-    "health",
-    ascending=False
-)
 
 st.subheader(
     "🏆 City Ranking"

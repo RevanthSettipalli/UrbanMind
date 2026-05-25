@@ -43,9 +43,19 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+refresh_rate = max(
+    1,
+    int(
+        settings.get(
+            "refresh_rate",
+            10
+        )
+    )
+)
+
 st_autorefresh(
-    interval=1000,
-    key="forecast_live_clock"
+    interval=refresh_rate * 1000,
+    key=f"forecast_live_clock_{refresh_rate}"
 )
 
 
@@ -132,7 +142,7 @@ updated_time = IST.strftime(
 # LOAD
 # =================================
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=0)
 def load():
 
     try:
@@ -221,7 +231,15 @@ if "city" in df.columns:
         ]
 
 
-latest=df.iloc[-1]
+if df.empty:
+
+    st.warning(
+        "No forecast data available"
+    )
+
+    st.stop()
+
+latest = df.iloc[-1]
 
 
 # =================================

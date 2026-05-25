@@ -9,7 +9,7 @@ from streamlit_autorefresh import st_autorefresh
 from streamlit_folium import st_folium
 
 from utils.load_weather import load_weather
-# from utils.auth_guard import require_login
+from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
 
 from utils.settings import (
@@ -29,7 +29,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# require_login()
+require_login()
 
 render_sidebar()
 
@@ -113,11 +113,15 @@ unsafe_allow_html=True)
 # REFRESH
 # =================================
 
-st_autorefresh(
-    interval=1000,
-    key="analytics_live_clock"
+refresh_rate = max(
+    1,
+    int(settings.get("refresh_rate", 10))
 )
 
+st_autorefresh(
+    interval=refresh_rate * 1000,
+    key=f"analytics_refresh_{refresh_rate}"
+)
 
 # =================================
 # LOAD
@@ -409,24 +413,36 @@ df
 
 )
 
-rank["score"]=(
-100
--
-abs(
-rank["temperature"]
--
-30
-)
-)
+rank["score"] = (
+    100
+    - abs(
+        rank["temperature"]
+        - 30
+    )
+).clip(lower=0)
+
 
 rank=rank.sort_values(
-"score",
-ascending=False
+    "score",
+    ascending=False
 )
+
+# Insert recommendation block
+latest = (
+    df.sort_values("time")
+    .iloc[-1]
+)
+
+if latest["temperature"] > 40:
+    recommendation = "Heat Risk Increasing"
+elif latest["humidity"] > 80:
+    recommendation = "High Humidity Alert"
+else:
+    recommendation = "Conditions Stable"
 
 
 st.subheader(
-"🏆 City Ranking"
+    "🏆 City Ranking"
 )
 
 st.dataframe(
@@ -438,69 +454,101 @@ use_container_width=True
 # =================================
 # MAP
 # =================================
-
-coords={
-
-"Delhi":[28.61,77.20],
-"Mumbai":[19.07,72.87],
-"Hyderabad":[17.38,78.48],
-"Chennai":[13.08,80.27],
-"Bangalore":[12.97,77.59],
-"Vijayawada":[16.50,80.64]
-
-}
+# DIGITAL TWIN
+# ====================================
 
 st.subheader(
-"🗺 Urban Heat Map"
+    "🗺 Urban Digital Twin"
 )
 
-m=folium.Map(
+CITY = {
+    "Delhi": [28.61, 77.20],
+    "Mumbai": [19.07, 72.87],
+    "Hyderabad": [17.38, 78.48],
+    "Chennai": [13.08, 80.27],
+    "Bangalore": [12.97, 77.59],
+    "Kolkata": [22.57, 88.36],
+    "Vijayawada": [16.50, 80.64],
+    "Pune": [18.52, 73.85],
+    "Ahmedabad": [23.02, 72.57],
+    "Jaipur": [26.91, 75.78]
+}
 
-location=[
-21,
-79
-],
-
-zoom_start=5
-
+rank["risk"] = rank.apply(
+    lambda r:
+    "🔥 Heat Risk"
+    if r["temperature"] >= 40
+    else (
+        "🌧 High Humidity"
+        if r["humidity"] >= 80
+        else "✅ Stable"
+    ),
+    axis=1
 )
 
-for _,r in rank.iterrows():
+rank["color"] = rank["score"].apply(
+    lambda x:
+    "green"
+    if x >= 90
+    else (
+        "orange"
+        if x >= 75
+        else "red"
+    )
+)
 
-    if r["city"] in coords:
+m = folium.Map(
+    location=[21,79],
+    zoom_start=5,
+    tiles="CartoDB positron"
+)
+
+map_data = rank if city == "All Cities" else rank[
+    rank["city"] == city
+]
+
+for _, r in map_data.iterrows():
+
+    city_name = str(r["city"])
+
+    if city_name in CITY:
+
+        rec = (
+            "Heat Risk Increasing"
+            if r["temperature"] > 40
+            else (
+                "High Humidity Alert"
+                if r["humidity"] > 80
+                else "Conditions Stable"
+            )
+        )
 
         folium.CircleMarker(
+            location=CITY[city_name],
+            radius=18,
+            fill=True,
+            fill_opacity=.9,
+            color=r["color"],
+            fill_color=r["color"],
+            tooltip=city_name,
+            popup=f"""
+🏙 {city_name}
 
-location=
-coords[
-r["city"]
-],
+⭐ Score: {r['score']:.0f}
 
-radius=16,
+🌡 Temp: {r['temperature']:.1f}°C
 
-fill=True,
+💧 Humidity: {r['humidity']:.1f}%
 
-fill_opacity=.8,
-
-color="red",
-
-popup=
-f"""
-{r["city"]}
-
-Score:
-{r["score"]:.0f}
+⚠ Recommendation: {rec}
 """
-
-).add_to(
-m
-)
+        ).add_to(m)
 
 st_folium(
-m,
-height=450
+    m,
+    height=450,
+    width="stretch"
 )
-
 
 # =================================
 # TREND
@@ -510,20 +558,21 @@ st.subheader(
 "📈 Trend Analysis"
 )
 
-fig=px.area(
+trend_df = (
+    df
+    if city == "All Cities"
+    else df[
+        df["city"] == city
+    ]
+)
 
-df.tail(200),
-
-x="time",
-
-y=[
-
-"temperature",
-
-"humidity"
-
-]
-
+fig = px.area(
+    trend_df.tail(200),
+    x="time",
+    y=[
+        "temperature",
+        "humidity"
+    ]
 )
 
 fig.update_layout(

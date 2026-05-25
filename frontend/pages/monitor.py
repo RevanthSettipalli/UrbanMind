@@ -69,9 +69,19 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+refresh_rate = max(
+    1,
+    int(
+        settings.get(
+            "refresh_rate",
+            10
+        )
+    )
+)
+
 st_autorefresh(
-    interval=1000,
-    key="monitor_live_clock"
+    interval=refresh_rate * 1000,
+    key=f"monitor_live_clock_{refresh_rate}"
 )
 
 
@@ -123,7 +133,7 @@ MODEL = ROOT / "models" / "weather" / "weather_model.pkl"
 # LOAD
 # =====================================
 
-@st.cache_data(ttl=5)
+@st.cache_data(ttl=0)
 def load():
 
     try:
@@ -202,8 +212,15 @@ ram = metrics["ram"]
 confidence = metrics["confidence"]
 health = metrics["health"]
 
+if "start_time" not in st.session_state:
+    st.session_state["start_time"] = time.time()
+
 uptime = round(
-    time.time()/3600,
+    (
+        time.time()
+        -
+        st.session_state["start_time"]
+    ) / 3600,
     1
 )
 

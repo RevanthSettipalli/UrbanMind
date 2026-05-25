@@ -2,6 +2,7 @@ import json
 import time
 import random
 import os
+from pathlib import Path
 from datetime import datetime
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
@@ -12,6 +13,44 @@ BROKER = os.getenv(
 )
 
 TOPIC = "weather"
+ROOT = Path(__file__).resolve().parents[2]
+
+SETTINGS = (
+    ROOT
+    / "data"
+    / "settings.json"
+)
+
+
+def get_refresh_rate():
+
+    try:
+
+        if SETTINGS.exists():
+
+            with open(
+                SETTINGS
+            ) as f:
+
+                settings = json.load(f)
+
+            rate = settings.get(
+                "refresh_rate",
+                settings.get(
+                    "refresh",
+                    10
+                )
+            )
+
+            return max(
+                1,
+                int(rate)
+            )
+
+    except:
+        pass
+
+    return 10
 
 print(f"Using broker: {BROKER}")
 print("🚀 STARTING PRODUCER")
@@ -110,14 +149,24 @@ while True:
             value=data
         )
 
-        future.get(timeout=10)
+        future.get(
+            timeout=10
+        )
 
         producer.flush()
 
         print("📤 SENT")
         print(data)
 
-        time.sleep(2)
+        refresh_rate = get_refresh_rate()
+
+        print(
+            f"⏱ Refresh: {refresh_rate}s"
+        )
+
+        time.sleep(
+            refresh_rate
+        )
 
     except KafkaError as e:
 
