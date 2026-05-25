@@ -192,15 +192,15 @@ unsafe_allow_html=True
 )
 
         pages = [
-            ("📊 Dashboard", "pages/dashboard.py"),
-            ("📈 Analytics", "pages/analytics.py"),
-            ("🔮 Forecast", "pages/forecast.py"),
-            ("🌍 Geo", "pages/geo.py"),
-            ("🖥 Monitor", "pages/monitor.py"),
-            ("🤖 Assistant", "pages/assistant.py"),
-            ("📑 Reports", "pages/reports.py"),
-            ("⚙️ Settings", "pages/settings.py"),
-            ("ℹ️ About", "pages/about.py")
+            ("📊 Dashboard", "dashboard"),
+            ("📈 Analytics", "analytics"),
+            ("🔮 Forecast", "forecast"),
+            ("🌍 Geo", "geo"),
+            ("🖥 Monitor", "monitor"),
+            ("🤖 Assistant", "assistant"),
+            ("📑 Reports", "reports"),
+            ("⚙️ Settings", "settings"),
+            ("ℹ️ About", "about")
         ]
 
         for title, page in pages:
@@ -209,7 +209,7 @@ unsafe_allow_html=True
                 title,
                 use_container_width=True
             ):
-                st.switch_page(page)
+                st.switch_page(f"frontend/pages/{page}.py")
 
         st.markdown(
 '<div class="logout">',
@@ -223,7 +223,7 @@ unsafe_allow_html=True
             st.session_state.clear()
             try:
                 st.switch_page(
-                    "pages/login.py"
+                    "frontend/pages/login.py"
                 )
             except Exception:
                 st.rerun()
