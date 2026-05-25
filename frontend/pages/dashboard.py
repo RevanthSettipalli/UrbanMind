@@ -184,12 +184,12 @@ model = load_model()
 alerts = load_alerts()
 
 if df.empty:
+    st.info("No live stream available. Showing sample data.")
 
-    st.warning(
-        "Waiting for Producer..."
-    )
-
-    st.stop()
+    try:
+        df = pd.read_csv("data/weather_stream.csv")
+    except:
+        st.warning("No data available yet.")
 
 # ====================================
 # CLEAN
