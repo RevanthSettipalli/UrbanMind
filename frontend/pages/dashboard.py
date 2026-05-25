@@ -199,6 +199,15 @@ if df.empty:
     except Exception as e:
         st.warning(f"Fallback load failed: {e}")
         df = pd.DataFrame()
+
+if not df.empty:
+    df, selected_city = city_filter(df)
+else:
+    selected_city = "All Cities"
+
+model = load_model()
+alerts = load_alerts()
+
 # ====================================
 # CLEAN
 # ====================================
