@@ -20,4 +20,4 @@ data/processed_weather.csv
 
 # Optional
 *.log
-.ipynb_checkpoints/
+.ipynb_checkpoints/data/weather_stream.csv
