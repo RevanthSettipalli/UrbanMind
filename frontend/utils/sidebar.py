@@ -209,7 +209,7 @@ unsafe_allow_html=True
                 title,
                 use_container_width=True
             ):
-                st.switch_page(f"pages/{page}.py")
+                st.switch_page(f"frontend/pages/{page}.py")
 
         st.markdown(
 '<div class="logout">',
@@ -223,7 +223,7 @@ unsafe_allow_html=True
             st.session_state.pop("user", None)
 
             try:
-                st.switch_page("pages/login.py")
+                st.switch_page("frontend/pages/login.py")
             except Exception:
                 st.rerun()
 
