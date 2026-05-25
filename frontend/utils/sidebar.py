@@ -204,14 +204,24 @@ unsafe_allow_html=True
         ]
 
         for title, page in pages:
+
             if st.button(
                 title,
                 use_container_width=True
             ):
-                try:
-                    st.switch_page(page)
-                except Exception:
-                    st.rerun()
+
+                st.session_state["next_page"] = page
+                st.rerun()
+
+        if "next_page" in st.session_state:
+
+            page = st.session_state.pop(
+                "next_page"
+            )
+
+            st.switch_page(
+                page
+            )
 
         st.markdown(
 '<div class="logout">',
