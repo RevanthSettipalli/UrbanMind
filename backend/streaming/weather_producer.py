@@ -12,7 +12,9 @@ BROKER = os.getenv(
 )
 
 TOPIC = "weather"
-TOPIC = "weather"
+
+print(f"Using broker: {BROKER}")
+print("🚀 STARTING PRODUCER")
 
 cities = [
     "Delhi",
