@@ -212,6 +212,10 @@ city = selected_city
 
 plot = df.tail(40)
 
+if plot.empty:
+    st.warning("No weather records available.")
+    st.stop()
+
 latest = plot.iloc[-1]
 
 # ====================================
