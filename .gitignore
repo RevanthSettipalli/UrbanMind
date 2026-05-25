@@ -13,10 +13,10 @@ __pycache__/
 models/
 *.pkl
 
-# Generated data (DO NOT PUSH)
+# Generated data
 data/weather_history.csv
-data/weather_stream.csv
 data/processed_weather.csv
+!data/weather_stream.csv
 
 # Optional
 *.log
