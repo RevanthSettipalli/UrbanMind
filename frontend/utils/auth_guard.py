@@ -13,16 +13,14 @@ def require_login():
         )
 
         st.switch_page(
-            "pages/login.py"
+            "frontend/pages/login.py"
         )
 
         st.stop()
 
-
 def logout():
-
     st.session_state.clear()
 
     st.switch_page(
-        "pages/login.py"
+        "frontend/pages/login.py"
     )
