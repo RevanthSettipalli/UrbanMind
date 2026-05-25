@@ -61,7 +61,7 @@ if "user" not in st.session_state:
 # =====================
 
 if st.session_state.logged_in:
-    st.switch_page("dashboard.py")
+    st.switch_page("pages/dashboard.py")
 
 
 # =====================
@@ -101,7 +101,7 @@ if st.button("🔐 Login"):
         )
 
         st.switch_page(
-            "dashboard.py"
+            "pages/dashboard.py"
         )
 
     else:
@@ -124,7 +124,7 @@ with c1:
     ):
 
         st.switch_page(
-            "register.py"
+            "pages/register.py"
         )
 
 with c2:
@@ -134,5 +134,5 @@ with c2:
     ):
 
         st.switch_page(
-            "home.py"
+            "pages/home.py"
         )

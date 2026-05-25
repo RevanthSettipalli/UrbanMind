@@ -434,19 +434,22 @@ rank,
 use_container_width=True
 )
 
-
 # =================================
 # MAP
 # =================================
 
-coords={
+coords = {
 
 "Delhi":[28.61,77.20],
 "Mumbai":[19.07,72.87],
 "Hyderabad":[17.38,78.48],
 "Chennai":[13.08,80.27],
 "Bangalore":[12.97,77.59],
-"Vijayawada":[16.50,80.64]
+"Vijayawada":[16.50,80.64],
+"Pune":[18.52,73.85],
+"Kolkata":[22.57,88.36],
+"Ahmedabad":[23.02,72.57],
+"Jaipur":[26.91,75.78]
 
 }
 
@@ -454,54 +457,92 @@ st.subheader(
 "🗺 Urban Heat Map"
 )
 
-m=folium.Map(
+m = folium.Map(
 
-location=[
-21,
-79
-],
+location=[22,80],
 
-zoom_start=5
+zoom_start=5,
+
+tiles="CartoDB positron"
 
 )
 
-for _,r in rank.iterrows():
+# show selected city OR all cities
+if city == "All Cities":
 
-    if r["city"] in coords:
+    map_data = rank.copy()
 
-        folium.CircleMarker(
+else:
 
-location=
-coords[
-r["city"]
-],
+    map_data = rank[
+        rank["city"] == city
+    ]
 
-radius=16,
 
-fill=True,
+for _, r in map_data.iterrows():
 
-fill_opacity=.8,
+    city_name = str(
+        r["city"]
+    ).strip()
 
-color="red",
+    if city_name in coords:
 
-popup=
-f"""
-{r["city"]}
+        folium.Marker(
 
-Score:
+            location=
+            coords[city_name],
+
+            tooltip=
+            f"📍 {city_name}",
+
+            popup=f"""
+🏙 {city_name}
+
+🌡 Temp:
+{r["temperature"]:.1f}°C
+
+⭐ Score:
 {r["score"]:.0f}
-"""
+""",
 
-).add_to(
-m
-)
+            icon=folium.Icon(
+
+                color="red",
+
+                icon="map-marker",
+
+                prefix="fa"
+
+            )
+
+        ).add_to(m)
+
+        # Heat circle
+        folium.Circle(
+
+            location=
+            coords[city_name],
+
+            radius=25000,
+
+            color="red",
+
+            fill=True,
+
+            fill_opacity=0.15
+
+        ).add_to(m)
+
 
 st_folium(
+
 m,
-height=450
+
+height=500,
+
+use_container_width=True
+
 )
-
-
 # =================================
 # TREND
 # =================================
