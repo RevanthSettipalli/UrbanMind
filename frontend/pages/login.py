@@ -2,6 +2,31 @@ import streamlit as st
 import sys
 from pathlib import Path
 
+st.set_page_config(
+    page_title="UrbanMind Login",
+    page_icon="🌍",
+    initial_sidebar_state="collapsed"
+)
+
+st.markdown(
+    """
+<style>
+[data-testid="stSidebarNav"] {
+    display:none;
+}
+
+section[data-testid="stSidebar"] {
+    display:none;
+}
+
+button[kind="header"] {
+    display:none;
+}
+</style>
+""",
+    unsafe_allow_html=True
+)
+
 
 # =====================
 # ROOT PATH FIX

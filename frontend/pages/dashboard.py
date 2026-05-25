@@ -7,13 +7,13 @@ import pytz
 import json
 import sys
 
-
 from pathlib import Path
-from utils.city_selector import city_filter
 from datetime import datetime
+
 from streamlit_folium import st_folium
 from streamlit_autorefresh import st_autorefresh
 
+from utils.city_selector import city_filter
 from utils.auth_guard import require_login
 from utils.sidebar import render_sidebar
 from utils.settings import (
@@ -47,8 +47,8 @@ settings = load_settings()
 # ====================================
 
 st_autorefresh(
-    interval=settings.get("refresh", 5) * 1000,
-    key="dashboard"
+    interval=1000,
+    key="live_dashboard_clock"
 )
 
 # ====================================
@@ -60,10 +60,6 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-# ====================================
-# PATHS
-# ====================================
-
 CSV = ROOT / "data" / "processed_weather.csv"
 
 MODEL = (
@@ -73,7 +69,11 @@ MODEL = (
     / "weather_model.pkl"
 )
 
-ALERT = ROOT / "data" / "alerts.json"
+ALERT = (
+    ROOT
+    / "data"
+    / "alerts.json"
+)
 
 # ====================================
 # IMPORTS
@@ -85,34 +85,24 @@ from backend.intelligence.urban_score import (
 
 try:
 
-    from backend.intelligence.city_insights import (
-        generate_city_insights
-    )
-
-except:
-
-    def generate_city_insights(df):
-        return {}
-
-try:
-
     from backend.intelligence.recommendation_engine import (
         get_recommendation
     )
 
 except:
 
-    def get_recommendation(temp, hum):
+    def get_recommendation(
+        temp,
+        hum
+    ):
 
         if temp >= 42:
-
             return {
                 "message":
                 "🔥 Extreme Heat Alert"
             }
 
         if hum >= 85:
-
             return {
                 "message":
                 "🌧 Flood Risk"
@@ -169,7 +159,6 @@ def load_alerts():
         if ALERT.exists():
 
             with open(ALERT) as f:
-
                 return json.load(f)
 
     except:
@@ -177,6 +166,10 @@ def load_alerts():
 
     return []
 
+
+# ====================================
+# DATA
+# ====================================
 
 df = load_data()
 
@@ -186,19 +179,10 @@ model = load_model()
 
 alerts = load_alerts()
 
-# ====================================
-# CHECK
-# ====================================
-
 if df.empty:
 
     st.warning(
         "Waiting for Producer..."
-    )
-
-    st.write(
-        "CSV:",
-        CSV
     )
 
     st.stop()
@@ -217,34 +201,10 @@ if "time" in df.columns:
 df = df.dropna()
 
 # ====================================
-# FILTER
+# SINGLE FILTER
 # ====================================
 
-if "city" in df.columns:
-
-    city = st.selectbox(
-
-        "🏙 Select City",
-
-        ["All Cities"]
-
-        +
-
-        sorted(
-            df["city"]
-            .astype(str)
-            .unique()
-        )
-
-    )
-
-    if city != "All Cities":
-
-        df = df[
-            df["city"]
-            ==
-            city
-        ]
+city = selected_city
 
 plot = df.tail(40)
 
@@ -260,6 +220,18 @@ IST = datetime.now(
     )
 )
 
+updated_time = IST.strftime(
+    "%d %b %Y"
+)
+
+updated_clock = IST.strftime(
+    "%I:%M:%S %p"
+).replace(" AM", "AM").replace(" PM", "PM")
+
+current_time = IST.strftime(
+    "%I:%M:%S %p"
+).replace(" AM", "AM").replace(" PM", "PM")
+
 # ====================================
 # AI
 # ====================================
@@ -271,7 +243,13 @@ try:
         float(
 
             model.predict(
-                [[latest["humidity"]]]
+
+                [[
+                    latest[
+                        "humidity"
+                    ]
+                ]]
+
             )[0]
 
         ),
@@ -283,33 +261,35 @@ try:
 except:
 
     prediction = round(
-        latest["temperature"],
+        latest[
+            "temperature"
+        ],
         1
     )
 
 rec = get_recommendation(
 
-    latest["temperature"],
+    latest[
+        "temperature"
+    ],
 
-    latest["humidity"]
-
-)
-
-recommendation = (
-
-    rec["message"]
-
-    if isinstance(rec, dict)
-
-    else str(rec)
+    latest[
+        "humidity"
+    ]
 
 )
+
+recommendation = rec["message"]
 
 urban = calculate_score(
 
-    latest["temperature"],
+    latest[
+        "temperature"
+    ],
 
-    latest["humidity"],
+    latest[
+        "humidity"
+    ],
 
     prediction
 
@@ -321,7 +301,7 @@ health = urban["score"]
 # HERO
 # ====================================
 
-left, right = st.columns([5, 1])
+left, right = st.columns([8, 1.5])
 
 with left:
 
@@ -329,30 +309,27 @@ with left:
         """
 <div style="
 padding:55px;
-border-radius:35px;
+height:260px;
+border-radius:30px;
 background:linear-gradient(135deg,#021224,#0d5a8a);
 color:white;
-margin-bottom:25px;
+display:flex;
+flex-direction:column;
+justify-content:center;
 ">
 
 <div style="
-font-size:68px;
+font-size:72px;
 font-weight:900;
 ">
-
 🌍 Urban Dashboard
-
 </div>
-
-<br>
 
 <div style="
 font-size:24px;
-opacity:.95;
+margin-top:15px;
 ">
-
 Advanced Intelligence • Ranking • Geo Analysis
-
 </div>
 
 </div>
@@ -366,39 +343,69 @@ with right:
         f"""
 <div style="
 background:#dfe8f5;
-padding:30px;
-border-radius:18px;
-font-size:18px;
-font-weight:700;
+height:260px;
+border-radius:22px;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
 text-align:center;
-margin-top:10px;
+padding:18px;
+position:relative;
 ">
 
-{IST.strftime("%I:%M:%S %p")}
+<div style="
+font-size:44px;
+margin-top:0px;
+margin-bottom:8px;
+line-height:1;
+">
+🕒
+</div>
+
+<div style="
+font-size:28px;
+font-weight:800;
+color:#124f9d;
+margin-top:0px;
+line-height:1;
+white-space:nowrap;
+">
+{current_time}
+</div>
+
+<div style="
+margin-top:8px;
+font-size:15px;
+color:#5a6572;
+line-height:1;
+">
+Live Time
+</div>
 
 </div>
 """,
         unsafe_allow_html=True
     )
-    
+
 # ====================================
 # KPI
 # ====================================
 
-a,b,c,d,e=st.columns(5)
+a,b,c,d,e = st.columns(5)
 
 a.metric(
-"🏙 Urban Score",
+"🏙 Score",
 urban["score"]
 )
 
 b.metric(
-"🌡 Avg Temp",
+"🌡 Temp",
 f"{latest['temperature']}°C"
 )
 
 c.metric(
-"💧 Avg Humidity",
+"💧 Humidity",
 f"{latest['humidity']}%"
 )
 
@@ -425,26 +432,7 @@ health/100
 )
 
 # ====================================
-# ALERT
-# ====================================
-
-if alerts:
-
-    st.subheader(
-        "🚨 Alerts"
-    )
-
-    for a in alerts:
-
-        st.warning(
-            a.get(
-                "message",
-                ""
-            )
-        )
-
-# ====================================
-# RECOMMENDATION
+# RECOMMEND
 # ====================================
 
 st.subheader(
@@ -456,90 +444,12 @@ recommendation
 )
 
 # ====================================
-# KPI
-# ====================================
-
-a,b,c,d,e=st.columns(5)
-
-a.metric(
-"🌡 Temperature",
-f"{latest['temperature']}°C"
-)
-
-b.metric(
-"💧 Humidity",
-f"{latest['humidity']}%"
-)
-
-c.metric(
-"🔮 Prediction",
-f"{prediction}°C"
-)
-
-d.metric(
-"❤️ Health",
-f"{health}%"
-)
-
-e.metric(
-"🏙 Urban Score",
-urban["score"]
-)
-
-# ====================================
-# HEALTH
-# ====================================
-
-st.subheader(
-"🖥 System Health"
-)
-
-st.progress(
-health/100
-)
-
-# ====================================
-# ALERTS
-# ====================================
-
-if alerts:
-
-    st.subheader(
-        "🚨 Alerts"
-    )
-
-    for a in alerts:
-
-        st.warning(
-            a.get(
-                "message",
-                ""
-            )
-        )
-
-# ====================================
-# AI
-# ====================================
-
-st.subheader(
-"🤖 Recommendation"
-)
-
-st.info(
-recommendation
-)
-
-# ====================================
 # CHARTS
 # ====================================
 
-left,right=st.columns(2)
+l,r=st.columns(2)
 
-with left:
-
-    st.subheader(
-        "🌡 Temperature"
-    )
+with l:
 
     fig=go.Figure()
 
@@ -562,15 +472,11 @@ with left:
         use_container_width=True
     )
 
-with right:
+with r:
 
-    st.subheader(
-        "💧 Humidity"
-    )
+    fig=go.Figure()
 
-    fig2=go.Figure()
-
-    fig2.add_trace(
+    fig.add_trace(
 
         go.Scatter(
 
@@ -585,31 +491,77 @@ with right:
     )
 
     st.plotly_chart(
-        fig2,
+        fig,
         use_container_width=True
     )
 
 # ====================================
-# MAP
+# DIGITAL TWIN
 # ====================================
 
 st.subheader(
 "🗺 Urban Digital Twin"
 )
 
-m=folium.Map(
-location=[20.5,78.9],
-zoom_start=5
+CITY = {
+
+"Delhi":[28.61,77.20],
+
+"Mumbai":[19.07,72.87],
+
+"Hyderabad":[17.38,78.48],
+
+"Chennai":[13.08,80.27],
+
+"Bangalore":[12.97,77.59],
+
+"Kolkata":[22.57,88.36],
+
+"Vijayawada":[16.50,80.64],
+
+"Pune":[18.52,73.85],
+
+"Ahmedabad":[23.02,72.57],
+
+"Jaipur":[26.91,75.78]
+
+}
+
+coords = CITY.get(
+latest["city"],
+[20.5,78.9]
+)
+
+m = folium.Map(
+location=coords,
+zoom_start=8
 )
 
 folium.Marker(
-location=[16.5,80.64],
-popup=recommendation
+
+location=coords,
+
+tooltip=
+latest["city"],
+
+popup=f"""
+City:
+{latest["city"]}
+
+Temp:
+{latest["temperature"]}
+
+Humidity:
+{latest["humidity"]}
+
+{recommendation}
+"""
+
 ).add_to(m)
 
 st_folium(
 m,
-height=450
+height=550
 )
 
 # ====================================
@@ -617,7 +569,7 @@ height=450
 # ====================================
 
 st.subheader(
-"📄 Live Dataset"
+"📄 Dataset"
 )
 
 st.dataframe(
@@ -629,19 +581,20 @@ use_container_width=True
 # EXPORT
 # ====================================
 
-st.subheader(
-"⬇ Export Dashboard"
-)
-
-file,mime,ext=export_data(
+file,mime,ext = export_data(
 plot
 )
 
 st.download_button(
-"Download Dashboard Report",
+
+"⬇ Download Report",
+
 file,
+
 f"urbanmind{ext}",
+
 mime,
+
 use_container_width=True
 )
 
@@ -652,13 +605,19 @@ use_container_width=True
 st.markdown(
 f"""
 
-### 📌 Dashboard Summary
+### 📌 Summary
 
-- Records → {len(df)}
-- Prediction → {prediction}°C
-- Urban Score → {urban["score"]}
-- Health → {health}%
-- Export → {settings.get("export")}
+Records:
+{len(df)}
+
+Prediction:
+{prediction}°C
+
+Urban Score:
+{urban["score"]}
+
+Health:
+{health}%
 
 """
 )

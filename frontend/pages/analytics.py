@@ -114,8 +114,8 @@ unsafe_allow_html=True)
 # =================================
 
 st_autorefresh(
-    interval=settings["refresh"] * 1000,
-    key="analytics"
+    interval=1000,
+    key="analytics_live_clock"
 )
 
 
@@ -213,11 +213,19 @@ if city!="All Cities":
 # TIME
 # =================================
 
-IST=datetime.now(
-pytz.timezone(
-"Asia/Kolkata"
+IST = datetime.now(
+    pytz.timezone(
+        "Asia/Kolkata"
+    )
 )
-)
+
+current_time = IST.strftime(
+    "%I:%M:%S %p"
+).replace(" AM", "AM").replace(" PM", "PM")
+
+updated_time = IST.strftime(
+    "%d %b %Y · %I:%M:%S %p"
+).replace(" AM", "AM").replace(" PM", "PM")
 
 
 # =================================
@@ -265,7 +273,7 @@ max(
 # HEADER
 # =================================
 
-left,right=st.columns([5,1])
+left, right = st.columns([8.8,1.0])
 
 with left:
 
@@ -287,10 +295,51 @@ unsafe_allow_html=True
 
 with right:
 
-    st.info(
-IST.strftime(
-"%I:%M:%S %p"
-)
+    st.markdown(
+        f"""
+<div style="
+background:#dfe8f5;
+height:260px;
+border-radius:22px;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+text-align:center;
+padding:18px;
+position:relative;
+">
+
+<div style="
+font-size:44px;
+margin-top:0px;
+margin-bottom:8px;
+line-height:1;
+">
+🕒
+</div>
+
+<div style="
+font-size:28px;
+font-weight:800;
+color:#124f9d;
+line-height:1;
+white-space:nowrap;
+">
+{current_time}
+</div>
+
+<div style="
+margin-top:10px;
+font-size:15px;
+color:#5a6572;
+">
+Live Time
+</div>
+
+</div>
+""",
+unsafe_allow_html=True
 )
 
 
