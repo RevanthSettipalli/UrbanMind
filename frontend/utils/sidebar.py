@@ -208,10 +208,18 @@ unsafe_allow_html=True
 
             if st.button(
                 title,
+                key=f"nav_{page}",
                 use_container_width=True
             ):
-                page_path = str(Path(__file__).resolve().parent.parent / "pages" / f"{page}.py")
-                st.switch_page(page_path)
+
+                target = (
+                    Path(__file__).resolve().parents[1]
+                    / "pages"
+                    / f"{page}.py"
+                )
+
+                if target.exists():
+                    st.switch_page(target)
 
         st.markdown(
 '<div class="logout">',
@@ -225,8 +233,12 @@ unsafe_allow_html=True
             st.session_state.pop("user", None)
 
             try:
-                login_path = str(Path(__file__).resolve().parent.parent / "pages" / "login.py")
-                st.switch_page(login_path)
+                target = (
+                    Path(__file__).resolve().parents[1]
+                    / "pages"
+                    / "login.py"
+                )
+                st.switch_page(target)
             except Exception:
                 st.rerun()
 
