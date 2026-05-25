@@ -1,29 +1,22 @@
-import os
-import sys
-from pathlib import Path
-
-ROOT = Path(__file__).resolve().parents[2]
-
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
 import streamlit as st
-import streamlit.components.v1 as components
 import pandas as pd
 import plotly.graph_objects as go
 import joblib
 import folium
 import pytz
 import json
+import sys
+
+from pathlib import Path
 from datetime import datetime
 
 from streamlit_folium import st_folium
 from streamlit_autorefresh import st_autorefresh
 
-from frontend.utils.city_selector import city_filter
-from frontend.utils.auth_guard import require_login
-from frontend.utils.sidebar import render_sidebar
-from frontend.utils.settings import (
+from utils.city_selector import city_filter
+from utils.auth_guard import require_login
+from utils.sidebar import render_sidebar
+from utils.settings import (
     apply_theme,
     load_settings,
     export_data
@@ -47,30 +40,26 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-
 settings = load_settings()
-
-refresh_rate = max(
-    1,
-    int(
-        settings.get(
-            "refresh_rate",
-            1
-        )
-    )
-)
 
 # ====================================
 # AUTO REFRESH
 # ====================================
 
 st_autorefresh(
-    interval=refresh_rate * 1000,
-    key=f"live_dashboard_clock_{refresh_rate}"
+    interval=1000,
+    key="live_dashboard_clock"
 )
 
+# ====================================
+# ROOT
+# ====================================
 
-LIVE_CSV = ROOT / "data" / "weather_stream.csv"
+ROOT = Path(__file__).resolve().parents[2]
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 CSV = ROOT / "data" / "processed_weather.csv"
 
 MODEL = (
@@ -128,18 +117,13 @@ except:
 # LOAD
 # ====================================
 
-@st.cache_data(ttl=0)
+@st.cache_data(ttl=5)
 def load_data():
 
     try:
 
-        if LIVE_CSV.exists():
-            return pd.read_csv(
-                LIVE_CSV,
-                on_bad_lines="skip"
-            )
-
         if CSV.exists():
+
             return pd.read_csv(
                 CSV,
                 on_bad_lines="skip"
@@ -189,35 +173,19 @@ def load_alerts():
 
 df = load_data()
 
-if df.empty:
-
-    st.warning("Waiting for live stream data...")
-
-    try:
-
-        if LIVE_CSV.exists():
-            df = pd.read_csv(LIVE_CSV)
-
-        elif CSV.exists():
-            df = pd.read_csv(CSV)
-
-        else:
-            st.stop()
-
-    except Exception:
-        st.stop()
-
-else:
-
-    st.success(f"🟢 Live Stream Connected • {len(df)} records")
-
-if not df.empty:
-    df, selected_city = city_filter(df)
-else:
-    selected_city = "All Cities"
+df, selected_city = city_filter(df)
 
 model = load_model()
+
 alerts = load_alerts()
+
+if df.empty:
+
+    st.warning(
+        "Waiting for Producer..."
+    )
+
+    st.stop()
 
 # ====================================
 # CLEAN
@@ -238,19 +206,7 @@ df = df.dropna()
 
 city = selected_city
 
-plot = (
-    df
-    if city == "All Cities"
-    else df[
-        df["city"]
-        ==
-        city
-    ]
-).tail(40)
-
-if plot.empty:
-    st.warning("No weather records available.")
-    st.stop()
+plot = df.tail(40)
 
 latest = plot.iloc[-1]
 
@@ -258,9 +214,19 @@ latest = plot.iloc[-1]
 # TIME
 # ====================================
 
-IST = pd.Timestamp.now(
-    tz="Asia/Kolkata"
-).to_pydatetime()
+IST = datetime.now(
+    pytz.timezone(
+        "Asia/Kolkata"
+    )
+)
+
+updated_time = IST.strftime(
+    "%d %b %Y"
+)
+
+updated_clock = IST.strftime(
+    "%I:%M:%S %p"
+).replace(" AM", "AM").replace(" PM", "PM")
 
 current_time = IST.strftime(
     "%I:%M:%S %p"
@@ -373,9 +339,9 @@ Advanced Intelligence • Ranking • Geo Analysis
 
 with right:
 
-    components.html(
+    st.markdown(
         f"""
-<div style='
+<div style="
 background:#dfe8f5;
 height:260px;
 border-radius:22px;
@@ -385,49 +351,41 @@ justify-content:center;
 align-items:center;
 text-align:center;
 padding:18px;
-'>
+position:relative;
+">
 
-<div style='font-size:42px;'>🕒</div>
+<div style="
+font-size:44px;
+margin-top:0px;
+margin-bottom:8px;
+line-height:1;
+">
+🕒
+</div>
 
-<div
-id='urban_clock'
-style='
-font-size:26px;
+<div style="
+font-size:28px;
 font-weight:800;
 color:#124f9d;
-margin-top:10px;
-'>
+margin-top:0px;
+line-height:1;
+white-space:nowrap;
+">
 {current_time}
 </div>
 
-<div
-style='
+<div style="
 margin-top:8px;
 font-size:15px;
 color:#5a6572;
-'>
+line-height:1;
+">
 Live Time
 </div>
 
 </div>
-
-<script>
-function tick() {{
-const d = new Date();
-let h = d.getHours();
-const ap = h >= 12 ? 'PM' : 'AM';
-h = h % 12 || 12;
-const m = String(d.getMinutes()).padStart(2,'0');
-const s = String(d.getSeconds()).padStart(2,'0');
-document.getElementById('urban_clock').innerText =
-`${{String(h).padStart(2,'0')}}:${{m}}:${{s}}${{ap}}`;
-}}
-
-tick();
-setInterval(tick,1000);
-</script>
-        """,
-        height=260
+""",
+        unsafe_allow_html=True
     )
 
 # ====================================
@@ -546,106 +504,83 @@ st.subheader(
 )
 
 CITY = {
+
 "Delhi":[28.61,77.20],
+
 "Mumbai":[19.07,72.87],
+
 "Hyderabad":[17.38,78.48],
+
 "Chennai":[13.08,80.27],
+
 "Bangalore":[12.97,77.59],
+
 "Kolkata":[22.57,88.36],
+
 "Vijayawada":[16.50,80.64],
+
 "Pune":[18.52,73.85],
+
 "Ahmedabad":[23.02,72.57],
+
 "Jaipur":[26.91,75.78]
+
 }
 
-rank = (
+map_data = (
     df
-    .groupby("city")
-    .agg({
-        "temperature":"mean",
-        "humidity":"mean"
-    })
-    .round(1)
-    .reset_index()
-)
-
-rank["health"] = rank.apply(
-    lambda r: calculate_score(
-        r["temperature"],
-        r["humidity"],
-        r["temperature"]
-    )["score"],
-    axis=1
-)
-
-rank["risk"] = rank.apply(
-    lambda r:
-    "🔥 Heat Risk"
-    if r["temperature"] >= 40
-    else (
-        "🌧 Flood Risk"
-        if r["humidity"] >= 85
-        else "✅ Stable"
-    ),
-    axis=1
-)
-
-rank["color"] = rank["health"].apply(
-    lambda x:
-    "green"
-    if x >= 90
-    else (
-        "orange"
-        if x >= 75
-        else "red"
-    )
+    if city == "All Cities"
+    else df[
+        df["city"] == city
+    ]
 )
 
 m = folium.Map(
-location=[21,79],
-zoom_start=5,
-tiles="CartoDB positron"
+    location=[21,79],
+    zoom_start=5
 )
 
-if city == "All Cities":
-    map_data = rank
-else:
-    map_data = rank[
-        rank["city"] == city
-    ]
-
-for _, r in map_data.iterrows():
+for _, r in (
+    map_data
+    .groupby("city")
+    .tail(1)
+    .iterrows()
+):
 
     city_name = str(r["city"])
 
-    if city_name in CITY:
+    if city_name not in CITY:
+        continue
 
-        folium.CircleMarker(
-            location=CITY[city_name],
-            radius=18,
-            fill=True,
-            fill_opacity=.9,
-            color=r["color"],
-            fill_color=r["color"],
-            tooltip=city_name,
-            popup=f"""
-🏙 {city_name}
+    rec = get_recommendation(
+        float(r["temperature"]),
+        float(r["humidity"])
+    )["message"]
 
-❤️ Health: {r['health']:.0f}
+    folium.Marker(
 
-🌡 Temp: {r['temperature']:.1f}°C
+        location=CITY[city_name],
 
-💧 Humidity: {r['humidity']:.1f}%
+        tooltip=f"📍 {city_name}",
 
-⚠ Recommendation:
-{get_recommendation(r['temperature'], r['humidity'])['message']}
+        popup=f"""
+City:
+{city_name}
+
+Temp:
+{r['temperature']}
+
+Humidity:
+{r['humidity']}
+
+{rec}
 """
-        ).add_to(m)
+
+    ).add_to(m)
 
 st_folium(
 m,
-height=450,
-width="stretch"
+height=550
 )
 
 # ====================================
@@ -702,6 +637,612 @@ Urban Score:
 
 Health:
 {health}%
+
+"""
+)
+
+
+analytics 
+
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+import folium
+import pytz
+
+from datetime import datetime
+from streamlit_autorefresh import st_autorefresh
+from streamlit_folium import st_folium
+
+from utils.load_weather import load_weather
+from utils.auth_guard import require_login
+from utils.sidebar import render_sidebar
+
+from utils.settings import (
+    apply_theme,
+    load_settings,
+    export_data
+)
+
+
+# =================================
+# PAGE
+# =================================
+
+st.set_page_config(
+    page_title="Urban Analytics",
+    page_icon="📊",
+    layout="wide"
+)
+
+require_login()
+
+render_sidebar()
+
+st.markdown(
+    apply_theme(),
+    unsafe_allow_html=True
+)
+
+settings = load_settings()
+
+
+# =================================
+# PREMIUM UI
+# =================================
+
+st.markdown("""
+<style>
+
+.block-container{
+padding-top:0.4rem !important;
+}
+
+.hero{
+padding:40px;
+
+border-radius:30px;
+
+background:
+linear-gradient(
+135deg,
+#04162a,
+#0b5c93
+);
+
+color:white;
+
+margin-bottom:24px;
+}
+
+.hero h1{
+font-size:50px;
+}
+
+.hero p{
+font-size:18px;
+opacity:.9;
+}
+
+[data-testid="metric-container"]{
+
+background:white;
+
+border-radius:22px;
+
+padding:24px;
+
+box-shadow:
+0 8px 25px
+rgba(0,0,0,.05);
+
+}
+
+.section{
+
+padding:22px;
+
+background:white;
+
+border-radius:22px;
+
+margin-bottom:22px;
+
+}
+
+</style>
+""",
+unsafe_allow_html=True)
+
+
+# =================================
+# REFRESH
+# =================================
+
+st_autorefresh(
+    interval=1000,
+    key="analytics_live_clock"
+)
+
+
+# =================================
+# LOAD
+# =================================
+
+df = load_weather()
+
+if df.empty:
+
+    st.warning(
+        "Waiting for analytics..."
+    )
+
+    st.stop()
+
+
+# =================================
+# CLEAN
+# =================================
+
+required = [
+
+"time",
+"city",
+"temperature",
+"humidity"
+
+]
+
+for c in required:
+
+    if c not in df:
+
+        df[c] = (
+            "Unknown"
+            if c=="city"
+            else 0
+        )
+
+
+df["time"]=pd.to_datetime(
+df["time"],
+errors="coerce"
+)
+
+df["temperature"]=pd.to_numeric(
+df["temperature"],
+errors="coerce"
+)
+
+df["humidity"]=pd.to_numeric(
+df["humidity"],
+errors="coerce"
+)
+
+df=df.dropna()
+
+df=df.tail(3000)
+
+
+# =================================
+# FILTER
+# =================================
+
+cities=sorted(
+df["city"]
+.astype(str)
+.unique()
+)
+
+city=st.selectbox(
+
+"🏙 Select City",
+
+["All Cities"]
+
++
+
+cities
+
+)
+
+if city!="All Cities":
+
+    df=df[
+        df["city"]
+        ==
+        city
+    ]
+
+
+# =================================
+# TIME
+# =================================
+
+IST = datetime.now(
+    pytz.timezone(
+        "Asia/Kolkata"
+    )
+)
+
+current_time = IST.strftime(
+    "%I:%M:%S %p"
+).replace(" AM", "AM").replace(" PM", "PM")
+
+updated_time = IST.strftime(
+    "%d %b %Y · %I:%M:%S %p"
+).replace(" AM", "AM").replace(" PM", "PM")
+
+
+# =================================
+# SCORE
+# =================================
+
+avg_temp=round(
+df.temperature.mean(),
+1
+)
+
+avg_hum=round(
+df.humidity.mean(),
+1
+)
+
+urban=int(
+
+max(
+
+70,
+
+100
+
+-
+
+max(
+0,
+avg_temp-30
+)
+
+-
+
+max(
+0,
+(avg_hum-70)/2
+)
+
+)
+
+)
+
+
+# =================================
+# HEADER
+# =================================
+
+left, right = st.columns([8.8,1.0])
+
+with left:
+
+    st.markdown("""
+<div class='hero'>
+
+<h1>
+📊 Urban Analytics
+</h1>
+
+<p>
+Advanced Intelligence • Ranking • Geo Analysis
+</p>
+
+</div>
+""",
+unsafe_allow_html=True
+)
+
+with right:
+
+    st.markdown(
+        f"""
+<div style="
+background:#dfe8f5;
+height:260px;
+border-radius:22px;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+text-align:center;
+padding:18px;
+position:relative;
+">
+
+<div style="
+font-size:44px;
+margin-top:0px;
+margin-bottom:8px;
+line-height:1;
+">
+🕒
+</div>
+
+<div style="
+font-size:28px;
+font-weight:800;
+color:#124f9d;
+line-height:1;
+white-space:nowrap;
+">
+{current_time}
+</div>
+
+<div style="
+margin-top:10px;
+font-size:15px;
+color:#5a6572;
+">
+Live Time
+</div>
+
+</div>
+""",
+unsafe_allow_html=True
+)
+
+
+# =================================
+# KPI
+# =================================
+
+a,b,c,d=st.columns(4)
+
+a.metric(
+"🏙 Urban Score",
+urban
+)
+
+b.metric(
+"🌡 Avg Temp",
+f"{avg_temp}°C"
+)
+
+c.metric(
+"💧 Avg Humidity",
+f"{avg_hum}%"
+)
+
+d.metric(
+"📄 Records",
+len(df)
+)
+
+
+# =================================
+# HEALTH
+# =================================
+
+st.subheader(
+"🩺 Urban Health"
+)
+
+st.progress(
+urban/100
+)
+
+
+# =================================
+# RANK
+# =================================
+
+rank=(
+
+df
+
+.groupby(
+"city"
+)
+
+.agg({
+
+"temperature":"mean",
+
+"humidity":"mean"
+
+})
+
+.round(1)
+
+.reset_index()
+
+)
+
+rank["score"]=(
+100
+-
+abs(
+rank["temperature"]
+-
+30
+)
+)
+
+rank=rank.sort_values(
+"score",
+ascending=False
+)
+
+
+st.subheader(
+"🏆 City Ranking"
+)
+
+st.dataframe(
+rank,
+use_container_width=True
+)
+
+
+# =================================
+# MAP
+# =================================
+
+coords={
+
+"Delhi":[28.61,77.20],
+"Mumbai":[19.07,72.87],
+"Hyderabad":[17.38,78.48],
+"Chennai":[13.08,80.27],
+"Bangalore":[12.97,77.59],
+"Vijayawada":[16.50,80.64]
+
+}
+
+st.subheader(
+"🗺 Urban Heat Map"
+)
+
+m=folium.Map(
+
+location=[
+21,
+79
+],
+
+zoom_start=5
+
+)
+
+for _,r in rank.iterrows():
+
+    if r["city"] in coords:
+
+        folium.CircleMarker(
+
+location=
+coords[
+r["city"]
+],
+
+radius=16,
+
+fill=True,
+
+fill_opacity=.8,
+
+color="red",
+
+popup=
+f"""
+{r["city"]}
+
+Score:
+{r["score"]:.0f}
+"""
+
+).add_to(
+m
+)
+
+st_folium(
+m,
+height=450
+)
+
+
+# =================================
+# TREND
+# =================================
+
+st.subheader(
+"📈 Trend Analysis"
+)
+
+fig=px.area(
+
+df.tail(200),
+
+x="time",
+
+y=[
+
+"temperature",
+
+"humidity"
+
+]
+
+)
+
+fig.update_layout(
+height=500
+)
+
+st.plotly_chart(
+fig,
+use_container_width=True
+)
+
+
+# =================================
+# INSIGHT
+# =================================
+
+st.subheader(
+"🧠 AI Insight"
+)
+
+if avg_temp>40:
+
+    st.error(
+        "Heat Risk Increasing"
+    )
+
+elif avg_hum>80:
+
+    st.warning(
+        "Humidity Rising"
+    )
+
+else:
+
+    st.success(
+        "Urban Conditions Stable"
+    )
+
+
+# =================================
+# EXPORT
+# =================================
+
+file, mime, ext = export_data(
+    df
+)
+
+st.download_button(
+
+    "⬇ Export Analytics",
+
+    file,
+
+    f"urbanmind_analytics{ext}",
+
+    mime,
+
+    use_container_width=True
+)
+
+
+# =================================
+# SUMMARY
+# =================================
+
+st.markdown(
+f"""
+### 📌 Analytics Summary
+
+- Urban Score → {urban}
+- Records → {len(df)}
+- Avg Temp → {avg_temp}°C
+- Avg Humidity → {avg_hum}%
 
 """
 )
