@@ -1,4 +1,5 @@
 import streamlit as st
+from pathlib import Path
 
 
 def render_sidebar():
@@ -209,7 +210,8 @@ unsafe_allow_html=True
                 title,
                 use_container_width=True
             ):
-                st.switch_page(f"{page}.py")
+                page_path = str(Path(__file__).resolve().parent.parent / "pages" / f"{page}.py")
+                st.switch_page(page_path)
 
         st.markdown(
 '<div class="logout">',
@@ -223,7 +225,8 @@ unsafe_allow_html=True
             st.session_state.pop("user", None)
 
             try:
-                st.switch_page("login.py")
+                login_path = str(Path(__file__).resolve().parent.parent / "pages" / "login.py")
+                st.switch_page(login_path)
             except Exception:
                 st.rerun()
 
