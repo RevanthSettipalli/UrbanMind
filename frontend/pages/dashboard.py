@@ -1,3 +1,4 @@
+import os
 import sys
 from pathlib import Path
 
@@ -177,20 +178,27 @@ def load_alerts():
 
 df = load_data()
 
-df, selected_city = city_filter(df)
-
-model = load_model()
-
-alerts = load_alerts()
-
 if df.empty:
+
     st.info("No live stream available. Showing sample data.")
 
     try:
-        df = pd.read_csv("data/weather_stream.csv")
-    except:
-        st.warning("No data available yet.")
+        if os.path.exists("data/weather_history.csv"):
+            df = pd.read_csv("data/weather_history.csv")
 
+        elif os.path.exists("data/weather_stream.csv"):
+            df = pd.read_csv("data/weather_stream.csv")
+
+        elif os.path.exists("data/processed_weather.csv"):
+            df = pd.read_csv("data/processed_weather.csv")
+
+        else:
+            st.warning("No data available yet.")
+            df = pd.DataFrame()
+
+    except Exception as e:
+    st.warning(f"Fallback load failed: {e}")
+    df = pd.DataFrame()
 # ====================================
 # CLEAN
 # ====================================
