@@ -192,15 +192,15 @@ unsafe_allow_html=True
 )
 
         pages = [
-            ("📊 Dashboard", "frontend/pages/dashboard.py"),
-            ("📈 Analytics", "frontend/pages/analytics.py"),
-            ("🔮 Forecast", "frontend/pages/forecast.py"),
-            ("🌍 Geo", "frontend/pages/geo.py"),
-            ("🖥 Monitor", "frontend/pages/monitor.py"),
-            ("🤖 Assistant", "frontend/pages/assistant.py"),
-            ("📑 Reports", "frontend/pages/reports.py"),
-            ("⚙️ Settings", "frontend/pages/settings.py"),
-            ("ℹ️ About", "frontend/pages/about.py")
+            ("📊 Dashboard", "pages/dashboard.py"),
+            ("📈 Analytics", "pages/analytics.py"),
+            ("🔮 Forecast", "pages/forecast.py"),
+            ("🌍 Geo", "pages/geo.py"),
+            ("🖥 Monitor", "pages/monitor.py"),
+            ("🤖 Assistant", "pages/assistant.py"),
+            ("📑 Reports", "pages/reports.py"),
+            ("⚙️ Settings", "pages/settings.py"),
+            ("ℹ️ About", "pages/about.py")
         ]
 
         for title, page in pages:
@@ -209,19 +209,7 @@ unsafe_allow_html=True
                 title,
                 use_container_width=True
             ):
-
-                st.session_state["next_page"] = page
-                st.rerun()
-
-        if "next_page" in st.session_state:
-
-            page = st.session_state.pop(
-                "next_page"
-            )
-
-            st.switch_page(
-                page
-            )
+                st.switch_page(page)
 
         st.markdown(
 '<div class="logout">',
@@ -235,7 +223,7 @@ unsafe_allow_html=True
             st.session_state.clear()
             try:
                 st.switch_page(
-                    "frontend/pages/login.py"
+                    "pages/login.py"
                 )
             except Exception:
                 st.rerun()
