@@ -14,6 +14,7 @@ import joblib
 import folium
 import pytz
 import json
+from datetime import datetime
 
 from streamlit_folium import st_folium
 from streamlit_autorefresh import st_autorefresh
@@ -239,11 +240,9 @@ latest = plot.iloc[-1]
 # TIME
 # ====================================
 
-IST = datetime.now(
-    pytz.timezone(
-        "Asia/Kolkata"
-    )
-)
+IST = pd.Timestamp.now(
+    tz="Asia/Kolkata"
+).to_pydatetime()
 
 current_time = IST.strftime(
     "%I:%M:%S %p"
