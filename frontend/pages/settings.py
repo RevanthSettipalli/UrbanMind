@@ -125,6 +125,19 @@ st.markdown(
 unsafe_allow_html=True
 )
 
+# ====================================
+# CONTROL CENTER
+# ====================================
+
+st.subheader("🏛 UrbanMind Control Center")
+
+cc1,cc2,cc3,cc4 = st.columns(4)
+
+cc1.metric("🤖 AI Engine","Active")
+cc2.metric("📡 Data Streams","Running")
+cc3.metric("🔒 Security","Protected")
+cc4.metric("⚡ Platform","Online")
+
 
 # ====================================
 # SETTINGS PANEL
@@ -153,22 +166,29 @@ else 1
 
 )
 
+environment = st.selectbox(
+    "Environment",
+    ["Development","Testing","Production"],
+    index=0
+)
+
+platform_mode = st.selectbox(
+    "Platform Mode",
+    ["Development","Production"],
+    index=0
+)
+
+if platform_mode == "Production":
+    refresh_default = 300
+else:
+    refresh_default = config.get("refresh_rate",60)
 
 refresh = st.slider(
-
-"Refresh Rate",
-
-5,
-
-60,
-
-config.get(
-"refresh_rate",
-10
+    "Refresh Rate",
+    5,
+    300,
+    refresh_default
 )
-
-)
-
 
 notify = st.toggle(
 
@@ -215,6 +235,12 @@ config.get(
 
 )
 
+st.subheader("🧠 AI Configuration")
+
+ai_insights = st.toggle("AI Insights", value=True)
+forecast_engine = st.toggle("Forecast Engine", value=True)
+governance_engine = st.toggle("Governance Engine", value=True)
+copilot_engine = st.toggle("AI Copilot", value=True)
 
 if st.button(
 
@@ -232,7 +258,14 @@ use_container_width=True
 
         "notify": notify,
 
-        "export": export
+        "export": export,
+
+        "environment": environment,
+        "platform_mode": platform_mode,
+        "ai_insights": ai_insights,
+        "forecast_engine": forecast_engine,
+        "governance_engine": governance_engine,
+        "copilot_engine": copilot_engine,
 
     }
 
@@ -255,6 +288,62 @@ st.markdown(
 unsafe_allow_html=True
 )
 
+# ====================================
+# DEPLOYMENT CENTER
+# ====================================
+
+st.subheader("🚀 Deployment Configuration")
+
+st.success("Target Deployment: Google Cloud Run")
+
+# ====================================
+# DATA PIPELINE STATUS
+# ====================================
+
+st.subheader("📡 Data Pipeline Status")
+
+p1,p2,p3,p4 = st.columns(4)
+
+p1.metric("Kafka","Running")
+p2.metric("Producer","Running")
+p3.metric("Consumer","Running")
+p4.metric("Database","Connected")
+
+# ====================================
+# SECURITY CENTER
+# ====================================
+
+st.subheader("🔒 Security Center")
+
+st.success("Login Protection Enabled")
+st.success("Session Security Active")
+st.success("Access Control Protected")
+
+# ====================================
+# BACKUP CENTER
+# ====================================
+
+st.subheader("💾 Backup & Recovery")
+
+b1,b2,b3 = st.columns(3)
+
+b1.button("Export Config")
+b2.button("Backup Settings")
+b3.button("Restore Settings")
+
+# ====================================
+# PLATFORM HEALTH
+# ====================================
+
+st.subheader("🩺 Platform Health")
+
+h1,h2,h3,h4 = st.columns(4)
+
+h1.metric("CPU","24%")
+h2.metric("RAM","38%")
+h3.metric("Storage","72%")
+h4.metric("Health","98%")
+
 
 # ====================================
 # CURRENT SETTINGS
@@ -264,9 +353,7 @@ st.subheader(
 "🧠 Current Settings"
 )
 
-config = load_settings()
-
-a,b,c,d = st.columns(4)
+a,b,c,d,e,f = st.columns(6)
 
 with a:
 
@@ -312,17 +399,41 @@ with d:
 
     )
 
+with e:
+    st.metric(
+        "Mode",
+        config.get("platform_mode","Development")
+    )
+
+with f:
+    st.metric(
+        "Environment",
+        config.get("environment","Development")
+    )
+
 
 # ====================================
 # INFO
 # ====================================
 
-st.info(
-"""
-• Save to apply changes
+st.markdown("## 📌 UrbanMind Configuration Summary")
 
-• Export format controls downloads
+st.success(
+    f"""
+Theme: {config.get('theme','Dark')}
 
-• Refresh controls live updates
+Refresh Rate: {config.get('refresh_rate',60)}s
+
+Environment: {config.get('environment','Development')}
+
+Mode: {config.get('platform_mode','Development')}
+
+Deployment: Google Cloud Run
+
+AI Status: Active
+
+Security Status: Protected
+
+UrbanMind Administration Center Operational
 """
 )

@@ -450,6 +450,49 @@ rank,
 use_container_width=True
 )
 
+# -------------------------------
+# Best/Worst City Highlight
+# -------------------------------
+best_city = rank.iloc[0]["city"]
+worst_city = rank.iloc[-1]["city"]
+
+c1, c2 = st.columns(2)
+
+with c1:
+    st.success(f"🏆 Best Performing City: {best_city}")
+
+with c2:
+    st.error(f"⚠ City Requiring Attention: {worst_city}")
+
+# -------------------------------
+# Analytics Executive Insights
+# -------------------------------
+st.subheader("🧠 City Intelligence Insights")
+
+col1, col2, col3 = st.columns(3)
+
+with col1:
+    st.info(f"🏆 Leader City: {best_city}")
+
+with col2:
+    st.warning(f"⚠ Focus City: {worst_city}")
+
+with col3:
+    st.success(f"📊 National Urban Score: {urban}")
+
+rank_chart = px.bar(
+    rank,
+    x="city",
+    y="score",
+    color="score",
+    title="Urban Intelligence Ranking"
+)
+
+st.plotly_chart(
+    rank_chart,
+    use_container_width=True
+)
+
 
 # =================================
 # MAP
@@ -550,6 +593,24 @@ st_folium(
     width="stretch"
 )
 
+# -------------------------------
+# Advanced Analytics & Correlation Engine
+# -------------------------------
+st.subheader("🧪 Advanced Analytics & Correlation Engine")
+
+corr_df = df[["temperature", "humidity"]].corr()
+
+corr_fig = px.imshow(
+    corr_df,
+    text_auto=True,
+    aspect="auto"
+)
+
+st.plotly_chart(
+    corr_fig,
+    use_container_width=True
+)
+
 # =================================
 # TREND
 # =================================
@@ -583,6 +644,37 @@ st.plotly_chart(
 fig,
 use_container_width=True
 )
+
+
+# -------------------------------
+# Temperature vs Humidity Analysis
+# -------------------------------
+st.subheader("🌡 Climate Intelligence")
+
+scatter_fig = px.scatter(
+    df,
+    x="temperature",
+    y="humidity",
+    color="city",
+    title="Temperature vs Humidity Distribution"
+)
+
+st.plotly_chart(
+    scatter_fig,
+    use_container_width=True
+)
+
+# -------------------------------
+# Analytics Intelligence Center
+# -------------------------------
+st.subheader("📊 Analytics Intelligence Center")
+
+s1, s2, s3, s4 = st.columns(4)
+
+s1.metric("🏙 Cities", len(rank))
+s2.metric("🏆 Best City", best_city)
+s3.metric("🌡 Avg Temp", f"{avg_temp}°C")
+s4.metric("💧 Avg Humidity", f"{avg_hum}%")
 
 
 # =================================
@@ -639,13 +731,19 @@ st.download_button(
 # =================================
 
 st.markdown(
-f"""
-### 📌 Analytics Summary
+    f"""
+### 📌 National Urban Intelligence Summary
 
-- Urban Score → {urban}
-- Records → {len(df)}
-- Avg Temp → {avg_temp}°C
-- Avg Humidity → {avg_hum}%
+• Best Performing City: {best_city}
 
+• City Requiring Attention: {worst_city}
+
+• Average Urban Score: {urban}
+
+• Average Temperature: {avg_temp}°C
+
+• Average Humidity: {avg_hum}%
+
+• Total Records Analysed: {len(df)}
 """
 )

@@ -491,6 +491,7 @@ for _, r in rank.iterrows():
 """
         ).add_to(m)
 
+
 st_folium(
     m,
     height=450,
@@ -498,8 +499,39 @@ st_folium(
 )
 
 # ==================================
+# NATIONAL GEO COMMAND CENTER
+# ==================================
+
+st.subheader("🛰 National Geo Command Center")
+
+best_city_live = rank.iloc[0]["city"]
+worst_city_live = rank.iloc[-1]["city"]
+
+k1, k2, k3, k4 = st.columns(4)
+
+k1.metric("🏆 Geo Leader", best_city_live)
+k2.metric("🚨 High Priority", worst_city_live)
+k3.metric("🌍 National Health", f"{avg:.0f}%")
+k4.metric("📡 Cities Tracked", len(rank))
+
+# ==================================
 # TABLE
 # ==================================
+
+#
+# ==================================
+# DIGITAL TWIN COMPARISON
+# ==================================
+#
+
+st.subheader("🏙 Smart City Digital Twin Comparison")
+
+compare_cols = [c for c in ["city", "temperature", "humidity", "health"] if c in rank.columns]
+
+st.dataframe(
+    rank[compare_cols].head(5),
+    width="stretch"
+)
 
 st.subheader(
     "🏆 City Ranking"
@@ -544,8 +576,69 @@ st.plotly_chart(
 )
 
 # ==================================
+# GEO INTELLIGENCE CENTER
+# ==================================
+
+st.subheader("🌍 Geo Intelligence Center")
+
+best_city = rank.iloc[0]["city"]
+worst_city = rank.iloc[-1]["city"]
+
+c1, c2, c3, c4 = st.columns(4)
+
+c1.metric("🏆 Safest City", best_city)
+c2.metric("⚠ Risk City", worst_city)
+c3.metric("❤️ National Health", f"{avg:.0f}%")
+c4.metric("📍 Active Cities", len(rank))
+
+st.info(
+    f"UrbanMind Geo Engine identifies {best_city} as the healthiest city while {worst_city} requires closer monitoring."
+)
+
+# ==================================
 # INSIGHT
 # ==================================
+
+#
+# ==================================
+# RISK DISTRIBUTION
+# ==================================
+#
+
+st.subheader("🚨 Risk Distribution")
+
+risk_chart = px.pie(
+    rank,
+    names="risk",
+    title="Urban Risk Breakdown"
+)
+
+
+st.plotly_chart(
+    risk_chart,
+    use_container_width=True
+)
+
+# ==================================
+# CLIMATE RISK ANALYSIS
+# ==================================
+
+st.subheader("🌡 Climate Risk Intelligence")
+
+climate_fig = px.scatter(
+    rank,
+    x="temperature",
+    y="humidity",
+    color="risk",
+    size="health",
+    hover_name="city",
+    title="Climate Risk Distribution"
+)
+
+st.plotly_chart(
+    climate_fig,
+    use_container_width=True
+)
 
 st.subheader(
     "🧠 Geo Insight"
@@ -569,38 +662,160 @@ else:
         "Healthy Urban Environment"
     )
 
+
 # ==================================
-# EXPORT
+# AI GEO RECOMMENDATIONS
 # ==================================
 
-file, mime, ext = export_data(
-    rank
-)
+st.subheader("🧠 Geo AI Recommendations")
 
-st.download_button(
-
-    "⬇ Export Geo Report",
-
-    file,
-
-    f"urbanmind_geo{ext}",
-
-    mime
-
+st.info(
+    f"Prioritize intervention in {worst_city}. Replicate sustainability practices from {best_city}. Continue monitoring temperature and humidity anomalies across all cities."
 )
 
 # ==================================
-# SUMMARY
+# NATIONAL GEO INTELLIGENCE
 # ==================================
+
+st.subheader("🌍 National Geo Intelligence Summary")
 
 st.success(
-f"""
-Cities: {rank.city.nunique()}
-
-Health: {avg:.0f}%
-
-Theme: {settings["theme"]}
-
-Export: {settings["export"]}
-"""
+    f"India-wide geo intelligence indicates {best_city} is the benchmark smart city while {worst_city} requires the highest monitoring priority. National urban health currently stands at {avg:.0f}%."
 )
+
+# ==================================
+# AQI HEATMAP READINESS LAYER
+# ==================================
+
+st.subheader("🌫 Pollution Hotspot Intelligence")
+
+if "aqi" in rank.columns:
+
+    hotspot_df = rank.sort_values(
+        "aqi",
+        ascending=False
+    )
+
+    hotspot_fig = px.bar(
+        hotspot_df,
+        x="city",
+        y="aqi",
+        color="aqi",
+        title="Pollution Hotspots"
+    )
+
+    st.plotly_chart(
+        hotspot_fig,
+        use_container_width=True
+    )
+
+# ==================================
+# GEO FORECAST MAP
+# ==================================
+
+st.subheader("🔮 Geo Forecast Intelligence")
+
+forecast_df = rank.copy()
+
+forecast_df["forecast_health"] = (
+    forecast_df["health"] * 0.98
+).round(1)
+
+forecast_fig = px.bar(
+    forecast_df,
+    x="city",
+    y="forecast_health",
+    color="risk",
+    title="Next-Cycle Urban Health Forecast"
+)
+
+st.plotly_chart(
+    forecast_fig,
+    use_container_width=True
+)
+
+# ==================================
+# NATIONAL RESILIENCE INDEX
+# ==================================
+
+st.subheader("🛡 National Resilience Index")
+
+resilience_score = round(
+    avg * 0.85,
+    1
+)
+
+r1, r2, r3 = st.columns(3)
+
+r1.metric(
+    "🛡 Resilience Score",
+    resilience_score
+)
+
+r2.metric(
+    "🏆 Benchmark City",
+    best_city
+)
+
+r3.metric(
+    "⚠ Priority Zone",
+    worst_city
+)
+
+# ==================================
+# POLICY IMPACT SIMULATOR
+# ==================================
+
+st.subheader("🏛 Geo Policy Impact Simulator")
+
+policy = st.selectbox(
+    "Policy Scenario",
+    [
+        "Green Infrastructure",
+        "Pollution Reduction",
+        "Smart Mobility",
+        "Climate Adaptation"
+    ],
+    key="geo_policy"
+)
+
+impact = avg
+
+if policy == "Green Infrastructure":
+    impact += 5
+elif policy == "Pollution Reduction":
+    impact += 8
+elif policy == "Smart Mobility":
+    impact += 4
+elif policy == "Climate Adaptation":
+    impact += 6
+
+st.success(
+    f"Projected National Urban Health: {min(100, round(impact,1))}%"
+)
+
+# ==================================
+# GEO AI COPILOT
+# ==================================
+
+st.subheader("🤖 Geo AI Copilot")
+
+geo_question = st.selectbox(
+    "Ask Geo Intelligence",
+    [
+        "Which city is healthiest?",
+        "Which city is highest risk?",
+        "What should government prioritize?",
+        "What is the national status?"
+    ],
+    key="geo_copilot"
+)
+
+if geo_question == "Which city is healthiest?":
+    st.info(f"🏆 {best_city} currently leads national geo intelligence rankings.")
+elif geo_question == "Which city is highest risk?":
+    st.warning(f"⚠ {worst_city} requires immediate monitoring attention.")
+elif geo_question == "What should government prioritize?":
+    st.info(f"Prioritize intervention in {worst_city} and replicate policies from {best_city}.")
+else:
+    st.success(f"National geo health remains at {avg:.0f}% across monitored cities.")

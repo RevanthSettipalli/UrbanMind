@@ -11,14 +11,10 @@ def require_login():
         return True
 
     st.switch_page("pages/login.py")
+    st.stop()
 
 
 def logout():
-
-    keep = {}
-
     st.session_state.clear()
-
-    st.session_state.update(keep)
-
     st.switch_page("pages/login.py")
+    st.stop()

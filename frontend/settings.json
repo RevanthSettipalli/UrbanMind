@@ -1,6 +1,6 @@
 {
     "theme": "Light",
-    "refresh_rate": 28,
+    "refresh_rate": 5,
     "notify": true,
     "export": "JSON"
 }

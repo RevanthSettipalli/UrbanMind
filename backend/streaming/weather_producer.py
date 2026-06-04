@@ -1,11 +1,18 @@
 import json
 import time
-import random
 import os
+import requests
+from dotenv import load_dotenv
 from pathlib import Path
 from datetime import datetime
 from kafka import KafkaProducer
 from kafka.errors import KafkaError
+
+load_dotenv()
+
+OPENWEATHER_API_KEY = os.getenv(
+    "OPENWEATHER_API_KEY"
+)
 
 BROKER = os.getenv(
     "KAFKA_BOOTSTRAP_SERVERS",
@@ -52,6 +59,48 @@ def get_refresh_rate():
 
     return 10
 
+def get_aqi(lat, lon):
+
+    try:
+
+        url = (
+            "https://api.openweathermap.org/data/2.5/air_pollution"
+        )
+
+        params = {
+            "lat": lat,
+            "lon": lon,
+            "appid": OPENWEATHER_API_KEY
+        }
+
+        response = requests.get(
+            url,
+            params=params,
+            timeout=10
+        )
+
+        data = response.json()
+
+        if "list" not in data:
+            return {}
+
+        pollution = data["list"][0]
+
+        return {
+            "aqi": pollution["main"]["aqi"],
+            "pm25": pollution["components"].get("pm2_5", 0),
+            "pm10": pollution["components"].get("pm10", 0),
+            "co": pollution["components"].get("co", 0),
+            "no2": pollution["components"].get("no2", 0)
+        }
+
+    except Exception as e:
+
+        print(f"AQI API Error")
+        print(e)
+
+        return {}
+
 print(f"Using broker: {BROKER}")
 print("🚀 STARTING PRODUCER")
 
@@ -68,12 +117,57 @@ cities = [
     "Jaipur"
 ]
 
-conditions = [
-    "Sunny",
-    "Cloudy",
-    "Rainy",
-    "Windy"
-]
+def get_weather(city):
+
+    try:
+
+        url = (
+            "https://api.openweathermap.org/data/2.5/weather"
+        )
+
+        params = {
+            "q": city,
+            "appid": OPENWEATHER_API_KEY,
+            "units": "metric"
+        }
+
+        response = requests.get(
+            url,
+            params=params,
+            timeout=10
+        )
+
+        weather = response.json()
+
+        lat = weather["coord"]["lat"]
+        lon = weather["coord"]["lon"]
+
+        aqi_data = get_aqi(
+            lat,
+            lon
+        )
+
+        return {
+            "time": datetime.now().strftime(
+                "%Y-%m-%d %H:%M:%S"
+            ),
+            "city": city,
+            "temperature": weather["main"]["temp"],
+            "humidity": weather["main"]["humidity"],
+            "condition": weather["weather"][0]["main"],
+            "aqi": aqi_data.get("aqi", 0),
+            "pm25": aqi_data.get("pm25", 0),
+            "pm10": aqi_data.get("pm10", 0),
+            "co": aqi_data.get("co", 0),
+            "no2": aqi_data.get("no2", 0)
+        }
+
+    except Exception as e:
+
+        print(f"Weather API Error: {city}")
+        print(e)
+
+        return None
 
 print("🚀 STARTING PRODUCER")
 
@@ -89,6 +183,12 @@ while producer is None:
             json.dumps(x).encode("utf-8"),
 
             retries=10,
+
+            acks=1,
+
+            linger_ms=100,
+
+            batch_size=16384,
 
             request_timeout_ms=30000,
 
@@ -112,51 +212,22 @@ while True:
 
     try:
 
-        data = {
-            "time":
-            datetime.now().strftime(
-                "%Y-%m-%d %H:%M:%S"
-            ),
+        for city in cities:
 
-            "city":
-            random.choice(
-                cities
-            ),
+            data = get_weather(city)
 
-            "temperature":
-            round(
-                random.uniform(
-                    22,
-                    40
-                ),
-                1
-            ),
+            if not data:
+                continue
 
-            "humidity":
-            random.randint(
-                40,
-                90
-            ),
-
-            "condition":
-            random.choice(
-                conditions
+            producer.send(
+                TOPIC,
+                value=data
             )
-        }
 
-        future = producer.send(
-            TOPIC,
-            value=data
-        )
-
-        future.get(
-            timeout=10
-        )
+            print("📤 SENT")
+            print(data)
 
         producer.flush()
-
-        print("📤 SENT")
-        print(data)
 
         refresh_rate = get_refresh_rate()
 

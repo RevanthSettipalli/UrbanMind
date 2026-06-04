@@ -59,25 +59,6 @@ def load_weather():
         return pd.DataFrame()
 
 
-def save_alerts(data):
-
-    try:
-
-        with open(
-            ALERT_FILE,
-            "w"
-        ) as f:
-
-            json.dump(
-                data,
-                f,
-                indent=4
-            )
-
-    except:
-        pass
-
-
 def load_alerts():
 
     try:
@@ -95,119 +76,19 @@ def load_alerts():
 
 df = load_weather()
 
-stored = load_alerts()
-
-
-# =====================================
-# HEADER
-# =====================================
-
-IST = datetime.now(
-    pytz.timezone(
-        "Asia/Kolkata"
-    )
-)
-
-left,right = st.columns([4,1])
-
-with left:
-
-    st.title(
-        "🚨 Alert Intelligence Center"
-    )
-
-with right:
-
-    st.info(
-        IST.strftime(
-            "%I:%M:%S %p"
-        )
-    )
-
-
-# =====================================
-# BUILD ALERTS
-# =====================================
-
-alerts = []
-
-if not df.empty:
-
-    latest = df.tail(1).iloc[0]
-
-    temp = float(
-        latest.get(
-            "temperature",
-            0
-        )
-    )
-
-    hum = float(
-        latest.get(
-            "humidity",
-            0
-        )
-    )
-
-    city = str(
-        latest.get(
-            "city",
-            "Unknown"
-        )
-    )
-
-    if temp >= 40:
-
-        alerts.append({
-
-            "level":"HIGH",
-
-            "message":
-            f"🔥 Extreme Heat in {city}"
-
-        })
-
-    elif temp >= 35:
-
-        alerts.append({
-
-            "level":"MEDIUM",
-
-            "message":
-            f"🌡 Temperature Rising in {city}"
-
-        })
-
-    if hum >= 85:
-
-        alerts.append({
-
-            "level":"HIGH",
-
-            "message":
-            f"🌧 Humidity Critical"
-
-        })
-
-    if len(alerts) == 0:
-
-        alerts.append({
-
-            "level":"LOW",
-
-            "message":
-            "🟢 Urban Conditions Stable"
-
-        })
-
-save_alerts(
-    alerts
-)
+alerts = load_alerts()
 
 
 # =====================================
 # KPI
 # =====================================
+
+if not alerts:
+
+    alerts = [{
+        "level": "LOW",
+        "message": "🟢 No Active Alerts"
+    }]
 
 a,b,c = st.columns(3)
 
@@ -221,7 +102,7 @@ b.metric(
     len([
         x
         for x in alerts
-        if x["level"]=="HIGH"
+        if x.get("level") == "HIGH"
     ])
 )
 
@@ -243,22 +124,22 @@ st.subheader(
 
 for alert in alerts:
 
-    if alert["level"]=="HIGH":
+    if alert.get("level") == "HIGH":
 
         st.error(
-            alert["message"]
+            alert.get("message", "Alert")
         )
 
-    elif alert["level"]=="MEDIUM":
+    elif alert.get("level") == "MEDIUM":
 
         st.warning(
-            alert["message"]
+            alert.get("message", "Alert")
         )
 
     else:
 
         st.success(
-            alert["message"]
+            alert.get("message", "Alert")
         )
 
 

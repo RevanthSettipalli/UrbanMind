@@ -1,1 +1,14 @@
-[]
+[
+    {
+        "type": "heat",
+        "message": "\ud83d\udd25 Extreme Heat Alert - Delhi"
+    },
+    {
+        "type": "aqi",
+        "message": "\ud83c\udf2b Poor AQI Alert - Kolkata"
+    },
+    {
+        "type": "heat",
+        "message": "\ud83d\udd25 Extreme Heat Alert - Ahmedabad"
+    }
+]

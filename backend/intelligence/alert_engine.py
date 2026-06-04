@@ -27,58 +27,72 @@ def generate_alerts():
         return []
 
 
-    latest = df.iloc[-1]
-
     alerts = []
 
 
-    temp = float(
-        latest["temperature"]
+    latest_cities = (
+        df.groupby("city")
+        .tail(1)
     )
 
-    hum = float(
-        latest["humidity"]
-    )
+    for _, latest in latest_cities.iterrows():
 
-    city = str(
-        latest["city"]
-    )
+        temp = float(latest.get("temperature", 0))
+        hum = float(latest.get("humidity", 0))
+        aqi = float(latest.get("aqi", 0))
+        pm25 = float(latest.get("pm25", 0))
+        pm10 = float(latest.get("pm10", 0))
+        co = float(latest.get("co", 0))
+        no2 = float(latest.get("no2", 0))
+        city = str(latest.get("city", "Unknown"))
 
+        if temp >= 40:
+            alerts.append({
+                "type": "heat",
+                "message": f"🔥 Extreme Heat Alert - {city}"
+            })
 
-    if temp >= 30:
+        if hum >= 85:
+            alerts.append({
+                "type": "flood",
+                "message": f"🌊 Flood Risk Alert - {city}"
+            })
 
-        alerts.append({
+        if temp <= 10:
+            alerts.append({
+                "type": "cold",
+                "message": f"❄ Cold Weather Alert - {city}"
+            })
 
-            "type":"heat",
+        if aqi >= 4:
+            alerts.append({
+                "type": "aqi",
+                "message": f"🌫 Poor AQI Alert - {city}"
+            })
 
-            "message":
-            f"🔥 Extreme Heat in {city}"
+        if pm25 >= 75:
+            alerts.append({
+                "type": "pm25",
+                "message": f"😷 PM2.5 Alert - {city}"
+            })
 
-        })
+        if pm10 >= 100:
+            alerts.append({
+                "type": "pm10",
+                "message": f"🌫 PM10 Alert - {city}"
+            })
 
+        if co >= 500:
+            alerts.append({
+                "type": "co",
+                "message": f"⚠ CO Alert - {city}"
+            })
 
-    if hum >= 60:
-
-        alerts.append({
-
-            "type":"humidity",
-
-            "message":
-            f"🌊 Flood Risk in {city}"
-
-        })
-
-
-    if temp <= 20:
-
-        alerts.append({
-
-            "type":"cold",
-
-            "message":
-            f"❄️ Cold Conditions in {city}"
-
-        })
+        if no2 >= 20:
+            alerts.append({
+                "type": "no2",
+                "message": f"⚠ NO₂ Alert - {city}"
+            })
 
 
     ALERT.parent.mkdir(

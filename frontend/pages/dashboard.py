@@ -8,19 +8,39 @@ import json
 import sys
 
 from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
 from datetime import datetime
 
 from streamlit_folium import st_folium
 from streamlit_autorefresh import st_autorefresh
 
-from utils.city_selector import city_filter
-from utils.auth_guard import require_login
-from utils.sidebar import render_sidebar
-from utils.settings import (
+from frontend.utils.city_selector import city_filter
+from frontend.utils.auth_guard import require_login
+from frontend.utils.sidebar import render_sidebar
+from frontend.utils.settings import (
     apply_theme,
     load_settings,
     export_data
 )
+
+# ====================================
+# DASHBOARD COMPONENTS
+# ====================================
+from frontend.dashboard_components.hero import render_hero
+from frontend.dashboard_components.executive_center import render_executive_center
+from frontend.dashboard_components.national_center import render_national_center
+from frontend.dashboard_components.governance_ai import render_governance_ai
+from frontend.dashboard_components.alert_center import render_alert_center
+from frontend.dashboard_components.rankings import render_rankings
+from frontend.dashboard_components.analytics import render_analytics
+from frontend.dashboard_components.intelligence import render_intelligence
+from frontend.dashboard_components.digital_twin import render_digital_twin
+from frontend.dashboard_components.copilot import render_copilot
 
 # ====================================
 # PAGE
@@ -55,11 +75,6 @@ st_autorefresh(
 # ROOT
 # ====================================
 
-ROOT = Path(__file__).resolve().parents[2]
-
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
 CSV = ROOT / "data" / "processed_weather.csv"
 
 MODEL = (
@@ -83,34 +98,137 @@ from backend.intelligence.urban_score import (
     calculate_score
 )
 
+from backend.intelligence.risk_engine import (
+    calculate_risk
+)
+
+
+# Urban Anomaly Detection Engine
+try:
+
+    from backend.intelligence.anomaly_engine import (
+        detect_anomalies
+    )
+
+except Exception as e:
+
+    st.error(f"Anomaly Engine Import Error: {e}")
+
+    def detect_anomalies(data):
+        return []
+
+
+
+# AI Forecast Engine
+from backend.intelligence.forecast_ai import (
+    forecast_city
+)
+
+# Predictive Analytics Engine
+try:
+
+    from backend.intelligence.predictive_analytics import (
+        predictive_report
+    )
+
+except Exception:
+
+    try:
+
+        import importlib.util
+
+        predictive_path = (
+            ROOT
+            / "backend"
+            / "intelligence"
+            / "predictive_analytics.py"
+        )
+
+        spec = importlib.util.spec_from_file_location(
+            "predictive_analytics",
+            predictive_path
+        )
+
+        predictive_module = importlib.util.module_from_spec(spec)
+
+        spec.loader.exec_module(
+            predictive_module
+        )
+
+        predictive_report = (
+            predictive_module.predictive_report
+        )
+
+    except Exception as e:
+
+        st.error(
+            f"Predictive Analytics Import Error: {e}"
+        )
+
+        def predictive_report(
+            score,
+            aqi
+        ):
+
+            return {
+                "urban_score_forecast": score,
+                "aqi_forecast": aqi,
+                "risk_forecast": "UNKNOWN",
+                "warning": "Predictive Analytics unavailable"
+            }
+
+
+# Executive AI Engine
+try:
+
+    from backend.intelligence.executive_ai import (
+        generate_executive_report
+    )
+
+except Exception as e:
+
+    st.error(
+        f"Executive AI Import Error: {e}"
+    )
+
+    def generate_executive_report(
+        city,
+        score,
+        heat_risk,
+        pollution_risk,
+        urban_risk
+    ):
+
+        return {
+            "summary": "Executive AI unavailable",
+            "action": "No action available"
+        }
+
 try:
 
     from backend.intelligence.recommendation_engine import (
         get_recommendation
     )
 
-except:
+    # Recommendation engine loaded
+
+except Exception as e:
+
+    st.error(f"Recommendation Engine Import Error: {e}")
 
     def get_recommendation(
         temp,
-        hum
+        hum,
+        aqi=1,
+        pm25=0,
+        pm10=0,
+        co=0,
+        no2=0,
+        score=100
     ):
 
-        if temp >= 42:
-            return {
-                "message":
-                "🔥 Extreme Heat Alert"
-            }
-
-        if hum >= 85:
-            return {
-                "message":
-                "🌧 Flood Risk"
-            }
-
         return {
-            "message":
-            "✅ Conditions Stable"
+            "message": "⚠ Recommendation Engine Unavailable"
         }
 
 # ====================================
@@ -208,7 +326,46 @@ city = selected_city
 
 plot = df.tail(40)
 
-latest = plot.iloc[-1]
+if city == "All Cities":
+
+    latest_cities = (
+        df
+        .groupby("city")
+        .tail(1)
+    )
+
+    latest = pd.Series({
+
+        "temperature":
+        latest_cities["temperature"].mean(),
+
+        "humidity":
+        latest_cities["humidity"].mean(),
+
+        "aqi":
+        latest_cities["aqi"].mean(),
+
+        "pm25":
+        latest_cities["pm25"].mean(),
+
+        "pm10":
+        latest_cities["pm10"].mean(),
+
+        "co":
+        latest_cities["co"].mean(),
+
+        "no2":
+        latest_cities["no2"].mean()
+
+    })
+
+else:
+
+    latest = (
+        df[df["city"] == city]
+        .tail(1)
+        .iloc[0]
+    )
 
 # ====================================
 # TIME
@@ -267,20 +424,6 @@ except:
         1
     )
 
-rec = get_recommendation(
-
-    latest[
-        "temperature"
-    ],
-
-    latest[
-        "humidity"
-    ]
-
-)
-
-recommendation = rec["message"]
-
 urban = calculate_score(
 
     latest[
@@ -291,108 +434,134 @@ urban = calculate_score(
         "humidity"
     ],
 
-    prediction
+    prediction,
 
+    latest[
+        "aqi"
+    ],
+
+    latest[
+        "pm25"
+    ],
+
+    latest[
+        "pm10"
+    ],
+
+    latest[
+        "co"
+    ],
+
+    latest[
+        "no2"
+    ]
+
+)
+
+rec = get_recommendation(
+
+    latest[
+        "temperature"
+    ],
+
+    latest[
+        "humidity"
+    ],
+
+    latest[
+        "aqi"
+    ],
+
+    latest[
+        "pm25"
+    ],
+
+    latest[
+        "pm10"
+    ],
+
+    latest[
+        "co"
+    ],
+
+    latest[
+        "no2"
+    ],
+
+    urban["score"]
+
+)
+
+recommendation = rec.get(
+    "message",
+    "No recommendation available"
 )
 
 health = urban["score"]
 
 # ====================================
-# HERO
+# CITY RANKINGS
 # ====================================
 
-left, right = st.columns([8, 1.5])
+city_scores = []
 
-with left:
+for city_name in df["city"].unique():
 
-    st.markdown(
-        """
-<div style="
-padding:55px;
-height:260px;
-border-radius:30px;
-background:linear-gradient(135deg,#021224,#0d5a8a);
-color:white;
-display:flex;
-flex-direction:column;
-justify-content:center;
-">
+    city_df = df[df["city"] == city_name]
 
-<div style="
-font-size:72px;
-font-weight:900;
-">
-🌍 Urban Dashboard
-</div>
+    row = city_df.tail(1).iloc[0]
 
-<div style="
-font-size:24px;
-margin-top:15px;
-">
-Advanced Intelligence • Ranking • Geo Analysis
-</div>
+    score = calculate_score(
+        row["temperature"],
+        row["humidity"],
+        prediction,
+        row["aqi"],
+        row["pm25"],
+        row["pm10"],
+        row["co"],
+        row["no2"]
+    )["score"]
 
-</div>
-""",
-        unsafe_allow_html=True
-    )
+    city_scores.append({
+        "City": city_name,
+        "Score": score
+    })
 
-with right:
+ranking_df = pd.DataFrame(city_scores)
 
-    st.markdown(
-        f"""
-<div style="
-background:#dfe8f5;
-height:260px;
-border-radius:22px;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-text-align:center;
-padding:18px;
-position:relative;
-">
+ranking_df = ranking_df.sort_values(
+    "Score",
+    ascending=False
+)
 
-<div style="
-font-size:44px;
-margin-top:0px;
-margin-bottom:8px;
-line-height:1;
-">
-🕒
-</div>
+render_hero(current_time)
 
-<div style="
-font-size:28px;
-font-weight:800;
-color:#124f9d;
-margin-top:0px;
-line-height:1;
-white-space:nowrap;
-">
-{current_time}
-</div>
 
-<div style="
-margin-top:8px;
-font-size:15px;
-color:#5a6572;
-line-height:1;
-">
-Live Time
-</div>
+render_executive_center(df, ranking_df, alerts)
 
-</div>
-""",
-        unsafe_allow_html=True
-    )
+render_national_center(df, ranking_df)
+
+render_governance_ai(df, ranking_df)
+
+
+render_alert_center(
+    plot,
+    alerts,
+    latest,
+    urban,
+    selected_city,
+    detect_anomalies,
+    calculate_risk,
+    generate_executive_report
+)
 
 # ====================================
 # KPI
 # ====================================
 
-a,b,c,d,e = st.columns(5)
+a,b,c,d,e,f = st.columns(6)
+
+aqi_value = latest["aqi"] if "aqi" in latest.index else "N/A"
 
 a.metric(
 "🏙 Score",
@@ -410,11 +579,16 @@ f"{latest['humidity']}%"
 )
 
 d.metric(
+"🌫 AQI",
+aqi_value
+)
+
+e.metric(
 "📄 Records",
 len(df)
 )
 
-e.metric(
+f.metric(
 "🔮 Prediction",
 f"{prediction}°C"
 )
@@ -429,6 +603,33 @@ st.subheader(
 
 st.progress(
 health/100
+)
+
+
+pollution_rows = []
+for city_name in df["city"].unique():
+    city_df = df[df["city"] == city_name]
+    row = city_df.tail(1).iloc[0]
+    pollution_score = (
+        float(row.get("aqi", 0))
+        + float(row.get("pm25", 0))
+        + float(row.get("pm10", 0))
+        + float(row.get("co", 0))
+        + float(row.get("no2", 0))
+    )
+    pollution_rows.append({
+        "City": city_name,
+        "Pollution": round(pollution_score, 2)
+    })
+pollution_df = pd.DataFrame(pollution_rows)
+pollution_df = pollution_df.sort_values(
+    "Pollution",
+    ascending=False
+)
+render_rankings(
+    df,
+    ranking_df,
+    prediction
 )
 
 # ====================================
@@ -447,7 +648,7 @@ recommendation
 # CHARTS
 # ====================================
 
-l,r=st.columns(2)
+l,r,x = st.columns(3)
 
 with l:
 
@@ -494,149 +695,3 @@ with r:
         fig,
         use_container_width=True
     )
-
-# ====================================
-# DIGITAL TWIN
-# ====================================
-
-st.subheader(
-"🗺 Urban Digital Twin"
-)
-
-CITY = {
-
-"Delhi":[28.61,77.20],
-
-"Mumbai":[19.07,72.87],
-
-"Hyderabad":[17.38,78.48],
-
-"Chennai":[13.08,80.27],
-
-"Bangalore":[12.97,77.59],
-
-"Kolkata":[22.57,88.36],
-
-"Vijayawada":[16.50,80.64],
-
-"Pune":[18.52,73.85],
-
-"Ahmedabad":[23.02,72.57],
-
-"Jaipur":[26.91,75.78]
-
-}
-
-map_data = (
-    df
-    if city == "All Cities"
-    else df[
-        df["city"] == city
-    ]
-)
-
-m = folium.Map(
-    location=[21,79],
-    zoom_start=5
-)
-
-for _, r in (
-    map_data
-    .groupby("city")
-    .tail(1)
-    .iterrows()
-):
-
-    city_name = str(r["city"])
-
-    if city_name not in CITY:
-        continue
-
-    rec = get_recommendation(
-        float(r["temperature"]),
-        float(r["humidity"])
-    )["message"]
-
-    folium.Marker(
-
-        location=CITY[city_name],
-
-        tooltip=f"📍 {city_name}",
-
-        popup=f"""
-City:
-{city_name}
-
-Temp:
-{r['temperature']}
-
-Humidity:
-{r['humidity']}
-
-{rec}
-"""
-
-    ).add_to(m)
-
-st_folium(
-m,
-height=550
-)
-
-# ====================================
-# DATA
-# ====================================
-
-st.subheader(
-"📄 Dataset"
-)
-
-st.dataframe(
-plot.iloc[::-1],
-use_container_width=True
-)
-
-# ====================================
-# EXPORT
-# ====================================
-
-file,mime,ext = export_data(
-plot
-)
-
-st.download_button(
-
-"⬇ Download Report",
-
-file,
-
-f"urbanmind{ext}",
-
-mime,
-
-use_container_width=True
-)
-
-# ====================================
-# SUMMARY
-# ====================================
-
-st.markdown(
-f"""
-
-### 📌 Summary
-
-Records:
-{len(df)}
-
-Prediction:
-{prediction}°C
-
-Urban Score:
-{urban["score"]}
-
-Health:
-{health}%
-
-"""
-)

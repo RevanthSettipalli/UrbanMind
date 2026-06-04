@@ -225,7 +225,9 @@ unsafe_allow_html=True
             "🚪 Logout",
             use_container_width=True
         ):
-            logout()
+            st.session_state.clear()
+            st.switch_page("pages/login.py")
+            st.stop()
 
         st.markdown(
 "</div>",

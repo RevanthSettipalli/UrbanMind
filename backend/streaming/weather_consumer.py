@@ -1,3 +1,4 @@
+import psycopg2
 import json
 import time
 import pandas as pd
@@ -55,7 +56,32 @@ while consumer is None:
         time.sleep(5)
 
 print("📡 CONSUMER RUNNING")
+db = psycopg2.connect(
+    host="urbanmind-postgres",
+    database="urbanmind",
+    user="admin",
+    password="admin123",
+    port="5432"
+)
 
+cursor = db.cursor()
+
+print("✅ DATABASE CONNECTED")
+
+cursor.execute("""
+CREATE TABLE IF NOT EXISTS weather_data (
+    id SERIAL PRIMARY KEY,
+    time TIMESTAMP,
+    city VARCHAR(100),
+    temperature FLOAT,
+    humidity INTEGER,
+    condition VARCHAR(50)
+)
+""")
+
+db.commit()
+
+print("✅ TABLE VERIFIED")
 
 for file in FILES:
 
@@ -72,7 +98,12 @@ for file in FILES:
                 "city",
                 "temperature",
                 "humidity",
-                "condition"
+                "condition",
+                "aqi",
+                "pm25",
+                "pm10",
+                "co",
+                "no2"
             ]
         ).to_csv(
             file,
@@ -102,7 +133,44 @@ while True:
                 index=False
             )
 
+        cursor.execute(
+            """
+            INSERT INTO weather_data
+            (
+                time,
+                city,
+                temperature,
+                humidity,
+                condition,
+                aqi,
+                pm25,
+                pm10,
+                co,
+                no2
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+            """,
+            (
+                data["time"],
+                data["city"],
+                data["temperature"],
+                data["humidity"],
+                data["condition"],
+                data.get("aqi"),
+                data.get("pm25"),
+                data.get("pm10"),
+                data.get("co"),
+                data.get("no2")
+            )
+        )
+
+        db.commit()
+
+        print("✅ INSERTED INTO POSTGRES")
+
     except Exception as e:
+
+        db.rollback()
 
         print("❌ CONSUMER ERROR")
         print(e)

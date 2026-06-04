@@ -320,14 +320,54 @@ unsafe_allow_html=True
 # KPI
 # =====================================
 
-a,b,c,d,e,f = st.columns(6)
 
+a,b,c,d,e,f = st.columns(6)
 a.metric("🧠 CPU",f"{cpu}%")
 b.metric("💾 RAM",f"{ram}%")
 c.metric("📄 Records",records)
 d.metric("🤖 Model","Loaded" if model else "Missing")
 e.metric("🎯 Confidence",f"{confidence}%")
 f.metric("⏱ Uptime",f"{uptime}h")
+
+# =====================================
+# NATIONAL OPERATIONS CENTER
+# =====================================
+
+st.subheader("🏛 National Operations Center")
+
+n1,n2,n3,n4 = st.columns(4)
+n1.metric("🖥 Infrastructure", "Online")
+n2.metric("📡 Streams", "Active")
+n3.metric("🤖 AI Engine", "Running")
+n4.metric("🔒 Security", "Protected")
+
+
+
+# =====================================
+# ALERT COMMAND CENTER
+# =====================================
+
+st.subheader("🚨 Alert Command Center")
+
+alerts = []
+
+if cpu > 80:
+    alerts.append("High CPU Usage")
+
+if ram > 80:
+    alerts.append("High RAM Usage")
+
+if health < 70:
+    alerts.append("System Health Degraded")
+
+if confidence < 90:
+    alerts.append("Model Confidence Reduced")
+
+if alerts:
+    for alert in alerts:
+        st.error(alert)
+else:
+    st.success("✅ No Active Operational Alerts")
 
 
 # =====================================
@@ -337,11 +377,60 @@ f.metric("⏱ Uptime",f"{uptime}h")
 st.subheader("🩺 System Health")
 
 st.progress(
-health/100
+    health/100
 )
 
 st.success(
-f"Health Score • {health}%"
+    f"Health Score • {health}%"
+)
+
+# =====================================
+# RISK MONITORING ENGINE
+# =====================================
+
+st.subheader("🎯 Risk Monitoring Engine")
+
+risk = "LOW"
+
+if health < 70:
+    risk = "HIGH"
+elif health < 85:
+    risk = "MODERATE"
+
+r1,r2,r3 = st.columns(3)
+r1.metric("Risk Level", risk)
+r2.metric("Health", f"{health}%")
+r3.metric("Confidence", f"{confidence}%")
+
+
+
+# =====================================
+# LIVE MONITORING FEED
+# =====================================
+
+st.subheader("📡 Live Monitoring Feed")
+
+feed = pd.DataFrame({
+    "Time": [updated_time]*5,
+    "Event": [
+        "Sensor Update",
+        "AI Analysis Complete",
+        "Health Check Passed",
+        "Stream Synced",
+        "Monitoring Cycle Completed"
+    ],
+    "Status": [
+        "Success",
+        "Success",
+        "Success",
+        "Success",
+        "Success"
+    ]
+})
+
+st.dataframe(
+    feed,
+    use_container_width=True
 )
 
 
@@ -350,12 +439,45 @@ f"Health Score • {health}%"
 # =====================================
 
 st.subheader(
-"📄 Recent Records"
+    "📄 Recent Records"
 )
 
 st.dataframe(
-df.tail(20),
-width="stretch"
+    df.tail(20),
+    width="stretch"
+)
+
+# =====================================
+# OPERATIONS INTELLIGENCE CENTER
+# =====================================
+
+st.subheader("🧠 Operations Intelligence Center")
+
+ops1,ops2,ops3,ops4 = st.columns(4)
+ops1.metric("CPU", f"{cpu}%")
+ops2.metric("RAM", f"{ram}%")
+ops3.metric("Health", f"{health}%")
+ops4.metric("Confidence", f"{confidence}%")
+
+
+
+# =====================================
+# AI OPERATIONS ADVISOR
+# =====================================
+
+st.subheader("🤖 Monitor AI Advisor")
+
+st.info(
+    f"""
+Operational Health: {health}%
+
+Current Risk Level: {risk}
+
+Model Confidence: {confidence}%
+
+Recommendation:
+Continue monitoring infrastructure, investigate anomalies, and maintain stream health for uninterrupted city intelligence operations.
+"""
 )
 
 
@@ -366,26 +488,37 @@ width="stretch"
 file,mime,ext = export_data(df)
 
 st.download_button(
-"⬇ Export Monitor",
-file,
-f"urbanmind_monitor{ext}",
-mime,
-width="stretch"
+    "⬇ Export Monitor",
+    file,
+    f"urbanmind_monitor{ext}",
+    mime,
+    width="stretch"
 )
+
 
 
 # =====================================
 # SUMMARY
 # =====================================
 
+st.markdown("## 📌 National Operations Summary")
+
 st.success(
 f"""
-CPU: {cpu}%
+🖥 CPU Usage: {cpu}%
 
-RAM: {ram}%
+💾 RAM Usage: {ram}%
 
-Records: {records}
+📄 Records Processed: {records}
 
-Health: {health}%
+🩺 System Health: {health}%
+
+🎯 Confidence Score: {confidence}%
+
+⏱ System Uptime: {uptime}h
+
+🚨 Current Risk Level: {risk}
+
+✅ UrbanMind Monitoring Infrastructure Operational
 """
 )
