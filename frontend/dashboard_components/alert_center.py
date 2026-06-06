@@ -16,12 +16,29 @@ def render_alert_center(
 
     st.markdown("### 📡 Live Anomaly Feed")
 
-    anomalies = detect_anomalies(plot)
+    anomaly_data = detect_anomalies(plot)
 
-    if anomalies:
+    risk_score = anomaly_data.get("risk_score", 0)
+    anomaly_alerts = anomaly_data.get("alerts", [])
 
-        for anomaly in anomalies:
-            st.error(anomaly)
+    st.metric("Risk Score", risk_score)
+
+    if anomaly_alerts:
+
+        for alert in anomaly_alerts:
+
+            if isinstance(alert, dict):
+
+                st.error(
+                    alert.get(
+                        "message",
+                        str(alert)
+                    )
+                )
+
+            else:
+
+                st.error(str(alert))
 
     else:
 
