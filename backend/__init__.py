@@ -1,1 +1,0 @@
-# UrbanMind Backend Package
