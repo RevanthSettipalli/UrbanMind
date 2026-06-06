@@ -1,0 +1,6 @@
+{
+    "theme": "Light",
+    "refresh_rate": 300,
+    "notify": true,
+    "export": "CSV"
+}

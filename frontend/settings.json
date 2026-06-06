@@ -1,0 +1,12 @@
+{
+    "theme": "Light",
+    "refresh_rate": 100,
+    "notify": true,
+    "export": "CSV",
+    "environment": "Development",
+    "platform_mode": "Development",
+    "ai_insights": true,
+    "forecast_engine": true,
+    "governance_engine": true,
+    "copilot_engine": true
+}

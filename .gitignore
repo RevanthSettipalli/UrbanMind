@@ -1,0 +1,54 @@
+# macOS
+.DS_Store
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Environment
+.env
+
+# ML artifacts
+models/
+*.pkl
+
+# Generated data
+data/weather_history.csv
+data/processed_weather.csv
+data/weather_stream.csv
+
+# Optional
+*.log
+.ipynb_checkpoints/data/weather_stream.csv
+
+# VS Code
+.vscode/
+
+# Docker
+*.pid
+
+# Cache
+.cache/
+# Virtual Environments
+venv/
+venv311/
+.venv/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
+
+# Models (optional)
+*.h5
+*.ckpt
