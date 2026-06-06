@@ -573,15 +573,21 @@ risk_df["Risk Score"] = (
     + (risk_df["humidity"] * 0.5)
 ).clip(0,100)
 
-risk_heat = px.bar(
-    risk_df.sort_values("Risk Score", ascending=False),
-    x="city",
-    y="Risk Score",
-    color="Risk Score",
-    title="National Urban Risk Ranking"
-)
+if "city" in risk_df.columns:
 
-st.plotly_chart(risk_heat, width="stretch")
+    risk_heat = px.bar(
+        risk_df.sort_values("Risk Score", ascending=False),
+        x="city",
+        y="Risk Score",
+        color="Risk Score",
+        title="National Urban Risk Ranking"
+    )
+
+    st.plotly_chart(risk_heat, width="stretch")
+
+else:
+
+    st.info("City-level risk ranking is unavailable in the deployed dataset.")
 
 # =====================================
 # TREND FORECASTING SECTION
