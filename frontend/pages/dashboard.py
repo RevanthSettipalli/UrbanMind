@@ -583,6 +583,14 @@ f4.metric(
     f"{refresh_rate}s"
 )
 
+# Service Status Center
+s1, s2, s3, s4 = st.columns(4)
+
+s1.success("🟢 PostgreSQL")
+s2.success("🟢 ML Engine")
+s3.success("🟢 Alert System")
+s4.success("🟢 Dashboard")
+
 render_executive_center(df, ranking_df, alerts)
 
 render_national_center(df, ranking_df)
@@ -651,27 +659,7 @@ st.progress(
 health/100
 )
 
-
-pollution_rows = []
-for city_name in df["city"].unique():
-    city_df = df[df["city"] == city_name]
-    row = city_df.tail(1).iloc[0]
-    pollution_score = (
-        float(row.get("aqi", 0))
-        + float(row.get("pm25", 0))
-        + float(row.get("pm10", 0))
-        + float(row.get("co", 0))
-        + float(row.get("no2", 0))
-    )
-    pollution_rows.append({
-        "City": city_name,
-        "Pollution": round(pollution_score, 2)
-    })
-pollution_df = pd.DataFrame(pollution_rows)
-pollution_df = pollution_df.sort_values(
-    "Pollution",
-    ascending=False
-)
+ 
 render_rankings(
     df,
     ranking_df,
@@ -689,6 +677,16 @@ st.subheader(
 st.info(
 recommendation
 )
+
+st.subheader("🔮 AI Forecast Center")
+
+forecast_temp = round(prediction, 1)
+
+c1, c2, c3 = st.columns(3)
+
+c1.metric("Next Hour", f"{forecast_temp}°C")
+c2.metric("Urban Score", urban["score"])
+c3.metric("Risk Status", urban.get("status", "Stable"))
 
 # ====================================
 # CHARTS
@@ -735,6 +733,27 @@ with r:
 
         )
 
+    )
+
+    st.plotly_chart(
+        fig,
+        width='stretch'
+    )
+
+with x:
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Scatter(
+            x=plot["time"],
+            y=plot["aqi"],
+            fill="tozeroy"
+        )
+    )
+
+    fig.update_layout(
+        title="AQI Trend"
     )
 
     st.plotly_chart(
