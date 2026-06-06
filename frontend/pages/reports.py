@@ -429,30 +429,31 @@ with c2:
 # CHART
 # =====================================
 
-st.subheader(
-"📊 City Comparison"
-)
+st.subheader("📊 City Comparison")
 
-fig = px.bar(
+if "city" in report.columns:
 
-report,
+    fig = px.bar(
+        report,
+        x="city",
+        y="temperature",
+        color="humidity"
+    )
 
-x="city",
+    fig.update_layout(
+        height=500
+    )
 
-y="temperature",
+    st.plotly_chart(
+        fig,
+        width="stretch"
+    )
 
-color="humidity"
+else:
 
-)
-
-fig.update_layout(
-height=500
-)
-
-st.plotly_chart(
-fig,
-width="stretch"
-)
+    st.info(
+        "City-level data is unavailable in the deployed dataset."
+    )
 
 # =====================================
 # INTELLIGENCE TREND REPORT
