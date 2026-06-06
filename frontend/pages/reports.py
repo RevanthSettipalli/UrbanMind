@@ -124,7 +124,10 @@ ROOT = Path(__file__).resolve().parents[2]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-CSV = ROOT / "data" / "processed_weather.csv"
+
+CSV = ROOT / "data" / "processed" / "weather_clean.csv"
+st.write("CSV Path:", CSV)
+st.write("Exists:", CSV.exists())
 
 
 # =====================================
@@ -377,7 +380,7 @@ st.subheader(
 
 st.dataframe(
 report,
-use_container_width=True
+width="stretch"
 )
 
 # =====================================
@@ -439,7 +442,7 @@ height=500
 
 st.plotly_chart(
 fig,
-use_container_width=True
+width="stretch"
 )
 
 # =====================================
@@ -458,7 +461,7 @@ trend = px.line(
 
 st.plotly_chart(
     trend,
-    use_container_width=True
+    width="stretch"
 )
 
 # =====================================
@@ -489,7 +492,7 @@ corr_fig = px.imshow(
 
 st.plotly_chart(
     corr_fig,
-    use_container_width=True
+    width="stretch"
 )
 
 # =====================================
@@ -544,7 +547,7 @@ scorecard['Rank'] = scorecard['temperature'].rank(method='dense', ascending=True
 
 st.dataframe(
     scorecard.sort_values('Rank'),
-    use_container_width=True
+    width="stretch"
 )
 
 # =====================================
@@ -568,7 +571,7 @@ risk_heat = px.bar(
     title="National Urban Risk Ranking"
 )
 
-st.plotly_chart(risk_heat, use_container_width=True)
+st.plotly_chart(risk_heat, width="stretch")
 
 # =====================================
 # TREND FORECASTING SECTION
@@ -658,7 +661,7 @@ impact_fig = px.bar(
     title="Policy Impact Projection"
 )
 
-st.plotly_chart(impact_fig, use_container_width=True)
+st.plotly_chart(impact_fig, width="stretch")
 
 # =====================================
 # AUTOMATED ANOMALY DETECTION
@@ -672,7 +675,7 @@ if len(high_temp) > 0:
     st.warning(f"{len(high_temp)} anomalous temperature records detected.")
     st.dataframe(
         high_temp[['time','city','temperature']].tail(10),
-        use_container_width=True
+        width="stretch"
     )
 else:
     st.success("No critical anomalies detected.")
@@ -693,7 +696,7 @@ budget_df = pd.DataFrame({
     "Suggested Budget (M)": np.linspace(10,50,len(report)).round(1)
 })
 
-st.dataframe(budget_df, use_container_width=True)
+st.dataframe(budget_df, width="stretch")
 
 # =====================================
 # NATIONAL EXECUTIVE REPORT
@@ -777,20 +780,20 @@ st.subheader("🏛 Master Intelligence Package")
 m1, m2 = st.columns(2)
 
 with m1:
-    st.button("Generate Executive Report", use_container_width=True)
-    st.button("Generate Forecast Report", use_container_width=True)
-    st.button("Generate Analytics Report", use_container_width=True)
+    st.button("Generate Executive Report", width="stretch")
+    st.button("Generate Forecast Report", width="stretch")
+    st.button("Generate Analytics Report", width="stretch")
 
 with m2:
-    st.button("Generate Operations Report", use_container_width=True)
-    st.button("Generate National Intelligence Report", use_container_width=True)
+    st.button("Generate Operations Report", width="stretch")
+    st.button("Generate National Intelligence Report", width="stretch")
 
 st.download_button(
     "📥 Download Board Report (TXT)",
     data=f'''UrbanMind Executive Report\n\nBest City: {best_city}\nPriority City: {worst_city}\nRecords: {len(df)}\nAverage Temperature: {df['temperature'].mean():.1f}\nAverage Humidity: {df['humidity'].mean():.1f}%''',
     file_name='urbanmind_board_report.txt',
     mime='text/plain',
-    use_container_width=True
+    width="stretch"
 )
 
 
@@ -821,7 +824,7 @@ with NamedTemporaryFile(
             data=pdf_file.read(),
             file_name="UrbanMind_Executive_Report.pdf",
             mime="application/pdf",
-            use_container_width=True
+            width="stretch"
         )
 
 # =====================================
@@ -856,7 +859,7 @@ history_df = pd.DataFrame({
     ]
 })
 
-st.dataframe(history_df, use_container_width=True)
+st.dataframe(history_df, width="stretch")
 
 st.subheader("🗂 Automated Weekly Intelligence Reports")
 
@@ -865,7 +868,7 @@ archive = pd.DataFrame({
     "Status": ["Generated", "Generated", "Generated", "Generated"]
 })
 
-st.dataframe(archive, use_container_width=True)
+st.dataframe(archive, width="stretch")
 
 # =====================================
 # EXPORT
@@ -889,6 +892,6 @@ f"urbanmind_report{ext}",
 
 mime,
 
-use_container_width=True
+width="stretch"
 
 )
