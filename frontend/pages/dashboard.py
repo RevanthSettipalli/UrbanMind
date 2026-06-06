@@ -70,7 +70,7 @@ settings = load_settings()
 
 refresh_rate = max(
     1,
-    int(settings.get("refresh_rate", 60))
+    int(settings.get("refresh_rate", 5))
 )
 
 st_autorefresh(
@@ -78,11 +78,22 @@ st_autorefresh(
     key=f"live_dashboard_clock_{refresh_rate}"
 )
 
+st.markdown(
+    """
+    <script>
+    setInterval(function() {
+        window.parent.location.reload();
+    }, 5000);
+    </script>
+    """,
+    unsafe_allow_html=True
+)
+
 # ====================================
 # ROOT
 # ====================================
 
-CSV = ROOT / "data" / "processed_weather.csv"
+CSV = ROOT / "data" / "processed" / "weather_clean.csv"
 
 MODEL = (
     ROOT
@@ -632,8 +643,8 @@ urban["score"]
 )
 
 b.metric(
-"🌡 Temp",
-f"{latest['temperature']}°C"
+    "🌡 Temp",
+    f"{float(latest['temperature']):.1f}°C"
 )
 
 c.metric(
@@ -733,7 +744,7 @@ with l:
 
     st.plotly_chart(
         fig,
-        use_container_width=True
+        width='stretch'
     )
 
 with r:
@@ -756,5 +767,5 @@ with r:
 
     st.plotly_chart(
         fig,
-        use_container_width=True
+        width='stretch'
     )
