@@ -126,8 +126,6 @@ if str(ROOT) not in sys.path:
 
 
 CSV = ROOT / "data" / "processed" / "weather_clean.csv"
-st.write("CSV Path:", CSV)
-st.write("Exists:", CSV.exists())
 
 
 # =====================================
@@ -397,15 +395,26 @@ r3.metric("📊 Reports", "Generated")
 r4.metric("🤖 AI Reports", "Ready")
 
 
-best_city = report.sort_values(
-    "temperature",
-    ascending=True
-).iloc[0]["city"]
+if (
+    "city" in report.columns
+    and "temperature" in report.columns
+    and len(report) > 0
+):
 
-worst_city = report.sort_values(
-    "temperature",
-    ascending=False
-).iloc[0]["city"]
+    best_city = report.sort_values(
+        "temperature",
+        ascending=True
+    ).iloc[0]["city"]
+
+    worst_city = report.sort_values(
+        "temperature",
+        ascending=False
+    ).iloc[0]["city"]
+
+else:
+
+    best_city = "N/A"
+    worst_city = "N/A"
 
 c1,c2 = st.columns(2)
 
