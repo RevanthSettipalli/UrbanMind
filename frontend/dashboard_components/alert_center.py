@@ -1,4 +1,5 @@
 import streamlit as st
+from datetime import datetime
 
 
 def render_alert_center(
@@ -16,12 +17,20 @@ def render_alert_center(
 
     st.markdown("### 📡 Live Anomaly Feed")
 
+    def risk_badge(level):
+        icons = {
+            "LOW": "🟢",
+            "MODERATE": "🟡",
+            "HIGH": "🔴",
+            "CRITICAL": "🚨"
+        }
+        return f"{icons.get(level, '⚪')} {level}"
+
     anomaly_data = detect_anomalies(plot)
 
-    risk_score = anomaly_data.get("risk_score", 0)
     anomaly_alerts = anomaly_data.get("alerts", [])
 
-    st.metric("Risk Score", risk_score)
+    st.metric("Risk Score", anomaly_data.get("risk_score", 0))
 
     if anomaly_alerts:
 
@@ -30,15 +39,14 @@ def render_alert_center(
             if isinstance(alert, dict):
 
                 st.error(
-                    alert.get(
-                        "message",
-                        str(alert)
-                    )
+                    f"{alert.get('message', str(alert))}\n\n⏱ {datetime.now().strftime('%H:%M:%S')}"
                 )
 
             else:
 
-                st.error(str(alert))
+                st.error(
+                    f"{str(alert)}\n\n⏱ {datetime.now().strftime('%H:%M:%S')}"
+                )
 
     else:
 
@@ -95,42 +103,47 @@ def render_alert_center(
         )
 
         st.metric(
+            "Overall Risk Score",
+            f"{current_risk.get('risk_score', 0)}/100"
+        )
+
+        st.progress(
+            min(current_risk.get('risk_score', 0), 100) / 100
+        )
+
+        st.metric(
             "Heat Risk",
-            current_risk["heat_risk"]
+            risk_badge(current_risk["heat_risk"])
         )
 
         st.metric(
             "Pollution Risk",
-            current_risk["pollution_risk"]
+            risk_badge(current_risk["pollution_risk"])
         )
 
         st.metric(
             "Urban Risk",
-            current_risk["urban_risk"]
+            risk_badge(current_risk["urban_risk"])
         )
 
-        executive_report = (
-            generate_executive_report(
-                city=(
-                    selected_city
-                    if selected_city != "All Cities"
-                    else "India"
-                ),
-                score=urban["score"],
-                heat_risk=current_risk["heat_risk"],
-                pollution_risk=current_risk["pollution_risk"],
-                urban_risk=current_risk["urban_risk"]
-            )
-        )
 
-        st.subheader(
-            "🧠 Executive AI Advisor"
-        )
 
-        st.info(
-            executive_report["summary"]
-        )
+    st.markdown("---")
 
-        st.success(
-            executive_report["action"]
-        )
+    executive_report = generate_executive_report(
+        city=(
+            selected_city
+            if selected_city != "All Cities"
+            else "India"
+        ),
+        score=urban["score"],
+        heat_risk=current_risk["heat_risk"],
+        pollution_risk=current_risk["pollution_risk"],
+        urban_risk=current_risk["urban_risk"]
+    )
+
+    st.subheader("🧠 Executive AI Advisor")
+
+    st.info(executive_report["summary"])
+
+    st.success(executive_report["action"])

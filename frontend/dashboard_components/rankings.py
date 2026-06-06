@@ -18,8 +18,19 @@ def render_rankings(
 
     st.subheader("🏆 City Rankings")
 
+    ranking_display = ranking_df.copy()
+
+    if len(ranking_display) >= 1:
+        ranking_display.loc[ranking_display.index[0], "City"] = f"🥇 {ranking_display.iloc[0]['City']}"
+
+    if len(ranking_display) >= 2:
+        ranking_display.loc[ranking_display.index[1], "City"] = f"🥈 {ranking_display.iloc[1]['City']}"
+
+    if len(ranking_display) >= 3:
+        ranking_display.loc[ranking_display.index[2], "City"] = f"🥉 {ranking_display.iloc[2]['City']}"
+
     st.dataframe(
-        ranking_df,
+        ranking_display,
         use_container_width=True,
         hide_index=True
     )
@@ -39,12 +50,12 @@ def render_rankings(
 
     with c1:
         st.success(
-            f"🏆 Best City: {best['City']} ({best[score_col]})"
+            f"🥇 Best City: {best['City']} | Score: {best[score_col]}"
         )
 
     with c2:
         st.error(
-            f"⚠️ Worst City: {worst['City']} ({worst[score_col]})"
+            f"📉 Worst City: {worst['City']} | Score: {worst[score_col]}"
         )
 
     # ====================================
@@ -144,20 +155,13 @@ def render_rankings(
             float(row.get("no2", 0))
         )["score"]
 
-        if urban_score >= 85:
-
+        if urban_score >= 80:
             health_status = "Excellent"
-
-        elif urban_score >= 70:
-
+        elif urban_score >= 60:
             health_status = "Good"
-
-        elif urban_score >= 50:
-
+        elif urban_score >= 40:
             health_status = "Moderate"
-
         else:
-
             health_status = "Critical"
 
         uhi_rows.append({
@@ -206,7 +210,7 @@ def render_rankings(
     )
 
     uhi_fig.update_layout(
-        title="Urban Health Index Ranking"
+        title="Urban Health Index Ranking (Smart City Score)"
     )
 
     st.plotly_chart(

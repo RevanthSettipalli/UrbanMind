@@ -45,10 +45,36 @@ def calculate_risk(
     else:
         urban_risk = "LOW"
 
+    risk_score = 0
+
+    risk_score += {
+        "LOW": 10,
+        "MODERATE": 40,
+        "HIGH": 70,
+        "CRITICAL": 100
+    }[heat_risk]
+
+    risk_score += {
+        "LOW": 10,
+        "MODERATE": 40,
+        "HIGH": 70,
+        "CRITICAL": 100
+    }[pollution_risk]
+
+    risk_score += {
+        "LOW": 10,
+        "MODERATE": 40,
+        "HIGH": 70,
+        "CRITICAL": 100
+    }[urban_risk]
+
+    risk_score = round(risk_score / 3)
+
     return {
         "heat_risk": heat_risk,
         "pollution_risk": pollution_risk,
-        "urban_risk": urban_risk
+        "urban_risk": urban_risk,
+        "risk_score": risk_score
     }
 if __name__ == "__main__":
 

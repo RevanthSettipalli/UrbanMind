@@ -9,57 +9,57 @@ def calculate_score(
     no2
 ):
 
-    score = 100
+    score = 90
 
     # Temperature
     if temp > 35:
-        score -= min(20, (temp - 35) * 2)
+        score -= min(15, (temp - 35) * 1.5)
     elif temp < 10:
-        score -= min(15, (10 - temp) * 1.5)
+        score -= min(10, (10 - temp) * 1.0)
 
     # Humidity
-    if hum > 80:
-        score -= min(10, (hum - 80) * 0.5)
+    if hum > 85:
+        score -= min(8, (hum - 85) * 0.3)
     elif hum < 20:
-        score -= min(10, (20 - hum) * 0.5)
+        score -= min(8, (20 - hum) * 0.3)
 
     # Forecast risk
     if forecast > 38:
-        score -= 10
+        score -= 5
 
-    # AQI (dominant factor)
+    # AQI (dominant factor but less extreme)
     aqi_penalty = {
         1: 0,
-        2: 10,
-        3: 25,
-        4: 40,
-        5: 60
+        2: 8,
+        3: 18,
+        4: 30,
+        5: 45
     }
     score -= aqi_penalty.get(int(aqi), 0)
 
     # PM2.5 impact
     if pm25 > 15:
-        score -= min(20, (pm25 - 15) * 0.35)
+        score -= min(15, (pm25 - 15) * 0.15)
 
     # PM10 impact
     if pm10 > 45:
-        score -= min(10, (pm10 - 45) * 0.10)
+        score -= min(10, (pm10 - 45) * 0.05)
 
     # CO impact
     if co > 300:
-        score -= min(10, (co - 300) / 100)
+        score -= min(8, (co - 300) / 200)
 
     # NO2 impact
     if no2 > 40:
-        score -= min(10, (no2 - 40) * 0.25)
+        score -= min(8, (no2 - 40) * 0.15)
 
-    score = max(0, min(100, round(score)))
+    score = max(25, min(95, round(score)))
 
-    if score >= 85:
+    if score >= 80:
         level = "Excellent"
-    elif score >= 70:
+    elif score >= 60:
         level = "Good"
-    elif score >= 50:
+    elif score >= 40:
         level = "Moderate"
     else:
         level = "Critical"
