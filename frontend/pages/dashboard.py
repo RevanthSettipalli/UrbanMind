@@ -69,24 +69,13 @@ settings = load_settings()
 # ====================================
 
 refresh_rate = max(
-    1,
-    int(settings.get("refresh_rate", 5))
+    60,
+    int(settings.get("refresh_rate", 300))
 )
 
 st_autorefresh(
     interval=refresh_rate * 1000,
     key=f"live_dashboard_clock_{refresh_rate}"
-)
-
-st.markdown(
-    """
-    <script>
-    setInterval(function() {
-        window.parent.location.reload();
-    }, 5000);
-    </script>
-    """,
-    unsafe_allow_html=True
 )
 
 # ====================================
@@ -373,7 +362,10 @@ df = df.dropna()
 
 city = selected_city
 
-plot = df.tail(40)
+if city != "All Cities":
+    plot = df[df["city"] == city].tail(40)
+else:
+    plot = df.tail(40)
 
 if city == "All Cities":
 
@@ -415,28 +407,6 @@ else:
         .tail(1)
         .iloc[0]
     )
-
-# ====================================
-# TIME
-# ====================================
-
-IST = datetime.now(
-    pytz.timezone(
-        "Asia/Kolkata"
-    )
-)
-
-updated_time = IST.strftime(
-    "%d %b %Y"
-)
-
-updated_clock = IST.strftime(
-    "%I:%M:%S %p"
-).replace(" AM", "AM").replace(" PM", "PM")
-
-current_time = IST.strftime(
-    "%I:%M:%S %p"
-).replace(" AM", "AM").replace(" PM", "PM")
 
 # ====================================
 # AI
@@ -560,10 +530,12 @@ for city_name in df["city"].unique():
 
     row = city_df.tail(1).iloc[0]
 
+    city_prediction = float(row["temperature"])
+
     score = calculate_score(
         row["temperature"],
         row["humidity"],
-        prediction,
+        city_prediction,
         row["aqi"],
         row["pm25"],
         row["pm10"],
@@ -583,7 +555,7 @@ ranking_df = ranking_df.sort_values(
     ascending=False
 )
 
-render_hero(current_time)
+render_hero()
 
 st.subheader("📡 Data Freshness Center")
 
@@ -598,7 +570,7 @@ f1.metric(
 
 f2.metric(
     "⚡ Data Age",
-    f"{data_age_seconds}s"
+    f"{max(0, data_age_seconds)}s"
 )
 
 f3.metric(
@@ -644,12 +616,12 @@ urban["score"]
 
 b.metric(
     "🌡 Temp",
-    f"{float(latest['temperature']):.1f}°C"
+    f"{float(latest.get('temperature', 0)):.1f}°C"
 )
 
 c.metric(
 "💧 Humidity",
-f"{latest['humidity']}%"
+f"{latest.get('humidity', 0)}%"
 )
 
 d.metric(

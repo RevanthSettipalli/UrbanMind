@@ -1,7 +1,7 @@
 import streamlit as st
 
 
-def render_hero(current_time):
+def render_hero():
 
     left, right = st.columns([8, 1.5])
 
@@ -41,42 +41,46 @@ Advanced Intelligence • Ranking • Geo Analysis
 
     with right:
 
-        st.markdown(
-            f"""
-<div style="
-background:#dfe8f5;
-height:260px;
-border-radius:22px;
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-text-align:center;
-padding:18px;
-">
+        st.components.v1.html(
+            """
+            <div style="
+            background:#dfe8f5;
+            height:260px;
+            border-radius:22px;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            align-items:center;
+            text-align:center;
+            padding:18px;
+            ">
 
-<div style="
-font-size:44px;
-">
-🕒
-</div>
+                <div style="font-size:44px;">🕒</div>
 
-<div style="
-font-size:28px;
-font-weight:800;
-color:#124f9d;
-">
-{current_time}
-</div>
+                <div id="urbanmind-clock"
+                     style="font-size:28px;font-weight:800;color:#124f9d;">
+                </div>
 
-<div style="
-font-size:15px;
-color:#5a6572;
-">
-Live Time
-</div>
+                <div style="font-size:15px;color:#5a6572;">
+                    Live Time
+                </div>
+            </div>
 
-</div>
-""",
-            unsafe_allow_html=True
+            <script>
+            function updateClock(){
+                const now = new Date();
+                const time = now.toLocaleTimeString('en-IN', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    hour12: true
+                });
+                document.getElementById('urbanmind-clock').innerHTML = time;
+            }
+
+            updateClock();
+            setInterval(updateClock, 1000);
+            </script>
+            """,
+            height=260,
         )
