@@ -689,8 +689,13 @@ high_temp = df[df['temperature'] > df['temperature'].mean() + df['temperature'].
 
 if len(high_temp) > 0:
     st.warning(f"{len(high_temp)} anomalous temperature records detected.")
+
+    anomaly_cols = ["time", "temperature"]
+    if "city" in high_temp.columns:
+        anomaly_cols.insert(1, "city")
+
     st.dataframe(
-        high_temp[['time','city','temperature']].tail(10),
+        high_temp[anomaly_cols].tail(10),
         width="stretch"
     )
 else:
@@ -702,17 +707,23 @@ else:
 
 st.subheader("💡 Executive Decision Recommendations")
 
-for city in report['city'].head(5):
-    st.info(
-        f"{city}: Increase monitoring budget, strengthen environmental controls, and prioritize smart-city investments."
-    )
+if "city" in report.columns:
 
-budget_df = pd.DataFrame({
-    "City": report['city'],
-    "Suggested Budget (M)": np.linspace(10,50,len(report)).round(1)
-})
+    for city in report['city'].head(5):
+        st.info(
+            f"{city}: Increase monitoring budget, strengthen environmental controls, and prioritize smart-city investments."
+        )
 
-st.dataframe(budget_df, width="stretch")
+    budget_df = pd.DataFrame({
+        "City": report['city'],
+        "Suggested Budget (M)": np.linspace(10,50,len(report)).round(1)
+    })
+
+    st.dataframe(budget_df, width="stretch")
+
+else:
+
+    st.info("City-level recommendations are unavailable in the deployed dataset.")
 
 # =====================================
 # NATIONAL EXECUTIVE REPORT
@@ -746,16 +757,18 @@ st.success(
 
 st.subheader("🏙 City Report Cards")
 
-selected_city = st.selectbox(
-    "Select City Report",
-    sorted(report['city'].unique()),
-    key="report_card_city"
-)
+if "city" in report.columns and len(report) > 0:
 
-city_row = report[report['city'] == selected_city].iloc[0]
+    selected_city = st.selectbox(
+        "Select City Report",
+        sorted(report['city'].unique()),
+        key="report_card_city"
+    )
 
-st.success(
-    f"""
+    city_row = report[report['city'] == selected_city].iloc[0]
+
+    st.success(
+        f"""
 City: {selected_city}
 
 Average Temperature: {city_row['temperature']:.1f}°C
@@ -766,7 +779,11 @@ Status: Monitored
 
 Recommendation: Continue urban sustainability initiatives.
 """
-)
+    )
+
+else:
+
+    st.info("City report cards are unavailable because the dataset contains no city column.")
 
 # =====================================
 # BOARD REPORT PACKAGE
