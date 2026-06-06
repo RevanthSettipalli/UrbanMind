@@ -28,6 +28,7 @@ from utils.settings import (
 from backend.intelligence.geo_engine import (
     calculate_risk
 )
+from backend.intelligence.urban_score import calculate_score
 
 # ==================================
 # PAGE
@@ -256,54 +257,33 @@ latest = (
 # ==================================
 
 health = []
-
 risk = []
-
 colors = []
 
 for _, r in latest.iterrows():
 
-    score = max(
-
-        0,
-
-        100
-
-        -
-
-        max(
-            0,
-            r["temperature"] - 30
-        ) * 2
-
-        -
-
-        max(
-            0,
-            r["humidity"] - 70
-        )
-
+    urban_result = calculate_score(
+        r.get("temperature", 0),
+        r.get("humidity", 0),
+        r.get("temperature", 0),
+        r.get("aqi", 1),
+        r.get("pm25", 0),
+        r.get("pm10", 0),
+        r.get("co", 0),
+        r.get("no2", 0)
     )
 
-    health.append(
-        score
-    )
+    score = urban_result["score"]
+
+    health.append(score)
 
     level, color = calculate_risk(
-
         r["temperature"],
-
         r["humidity"]
-
     )
 
-    risk.append(
-        level
-    )
-
-    colors.append(
-        color
-    )
+    risk.append(level)
+    colors.append(color)
 
 latest["health"] = health
 latest["risk"] = risk
@@ -388,15 +368,20 @@ line-height:1;
 🕒
 </div>
 
-<div style="
-font-size:28px;
-font-weight:800;
-color:#124f9d;
-white-space:nowrap;
-line-height:1;
-">
-{current_time}
+<div id="geo-live-clock" style="font-size:28px;font-weight:800;color:#124f9d;white-space:nowrap;line-height:1;">
+Loading...
 </div>
+
+<script>
+function updateGeoClock(){
+const now=new Date();
+const time=now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true});
+const el=document.getElementById('geo-live-clock');
+if(el){el.innerHTML=time.replace(' AM','AM').replace(' PM','PM');}
+}
+updateGeoClock();
+setInterval(updateGeoClock,1000);
+</script>
 
 <div style="
 margin-top:10px;
@@ -475,6 +460,10 @@ for _, r in rank.iterrows():
 💧 Humidity: {r['humidity']:.1f}%
 
 ⚠ Risk: {r['risk']}
+
+📈 Rank: #{list(rank['city']).index(city_name)+1}
+
+🛰 Geo Status: Active
 """
         ).add_to(m)
 
@@ -484,22 +473,6 @@ st_folium(
     height=450,
     width="stretch"
 )
-
-# ==================================
-# NATIONAL GEO COMMAND CENTER
-# ==================================
-
-st.subheader("🛰 National Geo Command Center")
-
-best_city_live = rank.iloc[0]["city"]
-worst_city_live = rank.iloc[-1]["city"]
-
-k1, k2, k3, k4 = st.columns(4)
-
-k1.metric("🏆 Geo Leader", best_city_live)
-k2.metric("🚨 High Priority", worst_city_live)
-k3.metric("🌍 National Health", f"{avg:.0f}%")
-k4.metric("📡 Cities Tracked", len(rank))
 
 # ==================================
 # TABLE
@@ -524,9 +497,20 @@ st.subheader(
     "🏆 City Ranking"
 )
 
+ranking_display = rank.copy()
+
+if len(ranking_display) >= 1:
+    ranking_display.iloc[0, ranking_display.columns.get_loc("city")] = f"🥇 {ranking_display.iloc[0]['city']}"
+
+if len(ranking_display) >= 2:
+    ranking_display.iloc[1, ranking_display.columns.get_loc("city")] = f"🥈 {ranking_display.iloc[1]['city']}"
+
+if len(ranking_display) >= 3:
+    ranking_display.iloc[2, ranking_display.columns.get_loc("city")] = f"🥉 {ranking_display.iloc[2]['city']}"
+
 st.dataframe(
 
-    rank[[
+    ranking_display[[
         "city",
         "temperature",
         "humidity",
@@ -568,6 +552,13 @@ st.plotly_chart(
 # ==================================
 
 st.subheader("🌍 Geo Intelligence Center")
+
+s1, s2, s3, s4 = st.columns(4)
+
+s1.success("🟢 Geo Engine")
+s2.success("🟢 Map Service")
+s3.success("🟢 Forecast Engine")
+s4.success("🟢 AI Copilot")
 
 best_city = rank.iloc[0]["city"]
 worst_city = rank.iloc[-1]["city"]

@@ -73,19 +73,21 @@ def render_rankings(
         row = city_df.tail(1).iloc[0]
 
         pollution_score = (
-            float(row.get("aqi", 0))
-            + float(row.get("pm25", 0))
-            + float(row.get("pm10", 0))
-            + float(row.get("co", 0))
-            + float(row.get("no2", 0))
+            float(row.get("aqi", 0)) * 15
+            + float(row.get("pm25", 0)) * 0.20
+            + float(row.get("pm10", 0)) * 0.08
+            + float(row.get("co", 0)) * 0.01
+            + float(row.get("no2", 0)) * 0.25
+        )
+
+        pollution_score = min(
+            100,
+            round(pollution_score, 2)
         )
 
         pollution_rows.append({
             "City": city_name,
-            "Pollution": round(
-                pollution_score,
-                2
-            )
+            "Pollution Index": pollution_score
         })
 
     pollution_df = pd.DataFrame(
@@ -93,7 +95,7 @@ def render_rankings(
     )
 
     pollution_df = pollution_df.sort_values(
-        "Pollution",
+        "Pollution Index",
         ascending=False
     )
 
@@ -111,13 +113,13 @@ def render_rankings(
     with p1:
 
         st.error(
-            f"🚨 Most Polluted: {most_polluted['City']} ({most_polluted['Pollution']})"
+            f"🚨 Most Polluted: {most_polluted['City']} ({most_polluted['Pollution Index']})"
         )
 
     with p2:
 
         st.success(
-            f"🌿 Cleanest City: {least_polluted['City']} ({least_polluted['Pollution']})"
+            f"🌿 Cleanest City: {least_polluted['City']} ({least_polluted['Pollution Index']})"
         )
 
     # ====================================

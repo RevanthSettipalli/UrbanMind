@@ -22,10 +22,12 @@ def render_national_center(
         2
     )
 
-    if national_score >= 85:
+    if national_score >= 80:
         national_risk = "LOW"
-    elif national_score >= 70:
+    elif national_score >= 60:
         national_risk = "MODERATE"
+    elif national_score >= 40:
+        national_risk = "HIGH"
     else:
         national_risk = "CRITICAL"
 
@@ -68,17 +70,27 @@ Top Performing City: {smartest_city['City']}
 Most Critical City: {critical_city['City']}
 
 Average AQI: {national_aqi}
+
+Total Cities Monitored: {len(ranking_df)}
+
+National Readiness Index: {national_score}/100
 """
 
     st.info(summary)
 
-    if national_score >= 85:
+    if national_score >= 80:
 
         st.success(
             "🇮🇳 National Urban Ecosystem Status: Excellent"
         )
 
-    elif national_score >= 70:
+    elif national_score >= 60:
+
+        st.info(
+            "🇮🇳 National Urban Ecosystem Status: Good"
+        )
+
+    elif national_score >= 40:
 
         st.warning(
             "🇮🇳 National Urban Ecosystem Status: Moderate"
@@ -120,29 +132,29 @@ Average AQI: {national_aqi}
 
     excellent = len(
         ranking_df[
-            ranking_df["Score"] >= 85
+            ranking_df["Score"] >= 80
         ]
     )
 
     good = len(
         ranking_df[
-            (ranking_df["Score"] >= 70)
+            (ranking_df["Score"] >= 60)
             &
-            (ranking_df["Score"] < 85)
+            (ranking_df["Score"] < 80)
         ]
     )
 
     moderate = len(
         ranking_df[
-            (ranking_df["Score"] >= 50)
+            (ranking_df["Score"] >= 40)
             &
-            (ranking_df["Score"] < 70)
+            (ranking_df["Score"] < 60)
         ]
     )
 
     critical = len(
         ranking_df[
-            ranking_df["Score"] < 50
+            ranking_df["Score"] < 40
         ]
     )
 
@@ -174,8 +186,19 @@ Average AQI: {national_aqi}
         "### 🏆 Top Performing Cities"
     )
 
+    display_df = ranking_df.head(5).copy()
+
+    if len(display_df) >= 1:
+        display_df.iloc[0, display_df.columns.get_loc("City")] = f"🥇 {display_df.iloc[0]['City']}"
+
+    if len(display_df) >= 2:
+        display_df.iloc[1, display_df.columns.get_loc("City")] = f"🥈 {display_df.iloc[1]['City']}"
+
+    if len(display_df) >= 3:
+        display_df.iloc[2, display_df.columns.get_loc("City")] = f"🥉 {display_df.iloc[2]['City']}"
+
     st.dataframe(
-        ranking_df.head(5),
+        display_df,
         use_container_width=True,
         hide_index=True
     )

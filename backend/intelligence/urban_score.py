@@ -9,7 +9,7 @@ def calculate_score(
     no2
 ):
 
-    score = 90
+    score = 95
 
     # Temperature
     if temp > 35:
@@ -39,11 +39,11 @@ def calculate_score(
 
     # PM2.5 impact
     if pm25 > 15:
-        score -= min(15, (pm25 - 15) * 0.15)
+        score -= min(20, (pm25 - 15) * 0.20)
 
     # PM10 impact
     if pm10 > 45:
-        score -= min(10, (pm10 - 45) * 0.05)
+        score -= min(15, (pm10 - 45) * 0.08)
 
     # CO impact
     if co > 300:
@@ -51,7 +51,7 @@ def calculate_score(
 
     # NO2 impact
     if no2 > 40:
-        score -= min(8, (no2 - 40) * 0.15)
+        score -= min(12, (no2 - 40) * 0.20)
 
     score = max(25, min(95, round(score)))
 
