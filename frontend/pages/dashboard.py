@@ -646,20 +646,6 @@ f.metric(
 "🔮 Prediction",
 f"{prediction}°C"
 )
-
-# ====================================
-# HEALTH
-# ====================================
-
-st.subheader(
-"🩺 Urban Health"
-)
-
-st.progress(
-health/100
-)
-
- 
 render_rankings(
     df,
     ranking_df,
@@ -686,7 +672,17 @@ c1, c2, c3 = st.columns(3)
 
 c1.metric("Next Hour", f"{forecast_temp}°C")
 c2.metric("Urban Score", urban["score"])
-c3.metric("Risk Status", urban.get("status", "Stable"))
+
+if urban["score"] >= 80:
+    risk_status = "LOW"
+elif urban["score"] >= 60:
+    risk_status = "MODERATE"
+elif urban["score"] >= 40:
+    risk_status = "HIGH"
+else:
+    risk_status = "CRITICAL"
+
+c3.metric("Risk Status", risk_status)
 
 # ====================================
 # CHARTS
@@ -712,6 +708,10 @@ with l:
 
     )
 
+    fig.update_layout(
+        title="Temperature Trend (°C)"
+    )
+
     st.plotly_chart(
         fig,
         width='stretch'
@@ -735,6 +735,10 @@ with r:
 
     )
 
+    fig.update_layout(
+        title="Humidity Trend (%)"
+    )
+
     st.plotly_chart(
         fig,
         width='stretch'
@@ -747,7 +751,7 @@ with x:
     fig.add_trace(
         go.Scatter(
             x=plot["time"],
-            y=plot["aqi"],
+            y=plot["aqi"] if "aqi" in plot.columns else [0] * len(plot),
             fill="tozeroy"
         )
     )
