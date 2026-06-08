@@ -345,7 +345,7 @@ unsafe_allow_html=True)
 with right:
 
     st.markdown(
-f"""
+"""
 <div style="
 background:#dfe8f5;
 height:260px;
@@ -490,7 +490,7 @@ compare_cols = [c for c in ["city", "temperature", "humidity", "health"] if c in
 
 st.dataframe(
     rank[compare_cols].head(5),
-    use_container_width=True
+    width='stretch'
 )
 
 st.subheader(
@@ -518,7 +518,7 @@ st.dataframe(
         "risk"
     ]],
 
-    use_container_width=True
+    width='stretch'
 
 )
 
@@ -544,7 +544,7 @@ fig = px.bar(
 
 st.plotly_chart(
     fig,
-    use_container_width=True
+    width='stretch'
 )
 
 # ==================================
@@ -595,7 +595,7 @@ risk_chart = px.pie(
 
 st.plotly_chart(
     risk_chart,
-    use_container_width=True
+    width='stretch'
 )
 
 # ==================================
@@ -616,7 +616,7 @@ climate_fig = px.scatter(
 
 st.plotly_chart(
     climate_fig,
-    use_container_width=True
+    width='stretch'
 )
 
 st.subheader(
@@ -685,7 +685,7 @@ if "aqi" in rank.columns:
 
     st.plotly_chart(
         hotspot_fig,
-        use_container_width=True
+        width='stretch'
     )
 
 # ==================================
@@ -710,7 +710,7 @@ forecast_fig = px.bar(
 
 st.plotly_chart(
     forecast_fig,
-    use_container_width=True
+    width='stretch'
 )
 
 # ==================================
