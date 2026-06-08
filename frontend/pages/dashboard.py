@@ -568,9 +568,13 @@ f1.metric(
     else "N/A"
 )
 
+age_seconds = max(0, data_age_seconds)
+age_hours = age_seconds // 3600
+age_minutes = (age_seconds % 3600) // 60
+
 f2.metric(
     "⚡ Data Age",
-    f"{max(0, data_age_seconds)}s"
+    f"{age_hours}h {age_minutes}m"
 )
 
 f3.metric(
@@ -616,6 +620,11 @@ render_alert_center(
 a,b,c,d,e,f = st.columns(6)
 
 aqi_value = latest["aqi"] if "aqi" in latest.index else "N/A"
+if aqi_value != "N/A":
+    try:
+        aqi_value = round(float(aqi_value), 2)
+    except:
+        pass
 
 a.metric(
 "🏙 Score",
@@ -633,7 +642,7 @@ f"{latest.get('humidity', 0)}%"
 )
 
 d.metric(
-"🌫 AQI",
+"🌫 Environmental Index",
 aqi_value
 )
 
