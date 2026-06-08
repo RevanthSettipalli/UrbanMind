@@ -202,7 +202,9 @@ errors="coerce"
 df=df.dropna()
 
 df=df.tail(3000)
-
+# Keep only valid city rows
+if "city" in df.columns:
+    df = df[df["city"].astype(str).str.strip() != ""]
 
 # =================================
 # FILTER
@@ -402,9 +404,13 @@ f1.metric(
     else "N/A"
 )
 
+age_seconds = max(0, data_age_seconds)
+age_hours = age_seconds // 3600
+age_minutes = (age_seconds % 3600) // 60
+
 f2.metric(
     "⚡ Data Age",
-    f"{data_age_seconds}s"
+    f"{age_hours}h {age_minutes}m"
 )
 
 f3.metric(
@@ -518,7 +524,7 @@ st.subheader(
 
 st.dataframe(
 rank,
-use_container_width=True
+width='stretch'
 )
 
 # -------------------------------
@@ -564,7 +570,7 @@ rank_chart = px.bar(
 
 st.plotly_chart(
     rank_chart,
-    use_container_width=True
+    width='stretch'
 )
 
 
@@ -672,18 +678,25 @@ st_folium(
 # -------------------------------
 st.subheader("🧪 Advanced Analytics & Correlation Engine")
 
-corr_df = df[["temperature", "humidity"]].corr()
+if len(df) > 2:
 
-corr_fig = px.imshow(
-    corr_df,
-    text_auto=True,
-    aspect="auto"
-)
+    corr_df = df[["temperature", "humidity"]].corr()
 
-st.plotly_chart(
-    corr_fig,
-    use_container_width=True
-)
+    corr_fig = px.imshow(
+        corr_df,
+        text_auto=True,
+        aspect="auto"
+    )
+
+    st.plotly_chart(
+        corr_fig,
+        width='stretch'
+    )
+
+else:
+    st.info(
+        "Need more data for correlation analysis."
+    )
 
 # =================================
 # TREND
@@ -716,7 +729,7 @@ height=500
 
 st.plotly_chart(
 fig,
-use_container_width=True
+width='stretch'
 )
 
 
@@ -735,7 +748,7 @@ scatter_fig = px.scatter(
 
 st.plotly_chart(
     scatter_fig,
-    use_container_width=True
+    width='stretch'
 )
 
 # -------------------------------
@@ -838,7 +851,7 @@ resource_df = pd.DataFrame([
 
 st.dataframe(
     resource_df,
-    use_container_width=True
+    width='stretch'
 )
 
 st.subheader("📋 Executive Recommendations")
@@ -882,7 +895,7 @@ if len(compare_cities) >= 2:
 
     st.dataframe(
         compare_df,
-        use_container_width=True
+        width='stretch'
     )
 
 # =================================
@@ -915,7 +928,7 @@ risk_fig = px.line_polar(
 
 st.plotly_chart(
     risk_fig,
-    use_container_width=True
+    width='stretch'
 )
 
 
@@ -964,7 +977,7 @@ st.download_button(
 
     mime,
 
-    use_container_width=True
+    width='stretch'
 )
 
 
