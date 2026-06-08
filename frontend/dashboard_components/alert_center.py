@@ -102,6 +102,27 @@ def render_alert_center(
             urban["score"]
         )
 
+        # Make displayed risk consistent with active alerts
+        alert_count = len(alerts) if alerts else 0
+
+        adjusted_risk_score = current_risk.get('risk_score', 0)
+
+        if alert_count >= 3:
+            adjusted_risk_score = max(adjusted_risk_score, 45)
+        elif alert_count == 2:
+            adjusted_risk_score = max(adjusted_risk_score, 35)
+        elif alert_count == 1:
+            adjusted_risk_score = max(adjusted_risk_score, 25)
+
+        current_risk['risk_score'] = adjusted_risk_score
+
+        if adjusted_risk_score >= 75:
+            current_risk['urban_risk'] = 'CRITICAL'
+        elif adjusted_risk_score >= 55:
+            current_risk['urban_risk'] = 'HIGH'
+        elif adjusted_risk_score >= 35:
+            current_risk['urban_risk'] = 'MODERATE'
+
         st.metric(
             "Overall Risk Score",
             f"{current_risk.get('risk_score', 0)}/100"
