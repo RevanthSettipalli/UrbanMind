@@ -186,46 +186,33 @@ df["city"] = (
     .astype(str)
 )
 
-df = df.dropna(
-    subset=[
-        "temperature",
-        "humidity",
-        "time"
-    ]
-)
+# Keep only supported cities for dashboard analytics
+valid_cities = set(EXPECTED_CITIES)
 
-# GUARANTEE ALL CITIES
+df["city"] = df["city"].str.strip()
 
-for c in EXPECTED_CITIES:
-
-    if c not in df["city"].values:
-
-        df.loc[len(df)] = {
-            "city": c,
-            "temperature": 0,
-            "humidity": 0,
-            "time": pd.Timestamp.now()
-        }
+df = df[
+    df["city"].isin(valid_cities)
+]
 
 df = df.tail(600)
+
+if df.empty:
+    st.warning("No valid city data available.")
+    st.stop()
 
 # ==================================
 # FILTER
 # ==================================
 
+available_cities = [
+    c for c in EXPECTED_CITIES
+    if c in df["city"].unique()
+]
+
 city = st.selectbox(
-
     "🏙 Select City",
-
-    ["All Cities"]
-
-    +
-
-    sorted(
-        df["city"]
-        .unique()
-    )
-
+    ["All Cities"] + available_cities
 )
 
 if city != "All Cities":
@@ -429,6 +416,8 @@ d.metric(
 st.subheader(
     "🗺 Urban Digital Twin"
 )
+
+st.caption("Select a city to focus the map on a single location, or choose All Cities to view every city.")
 
 m = folium.Map(
     location=[21,79],
