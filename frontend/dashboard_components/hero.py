@@ -16,10 +16,13 @@ def render_hero(current_time=None):
             display:flex;
             flex-direction:column;
             justify-content:center;">
-                <h1 style="font-size:64px;margin:0;">📊 Urban Analytics</h1>
+                <h1 style="font-size:64px;margin:0;">🌍 UrbanMind Command Center</h1>
                 <p style="font-size:28px;margin-top:10px;">
-                Advanced Intelligence • Ranking • Geo Analysis
+                Real-Time Monitoring • Forecasting • Urban Intelligence
                 </p>
+                <div style="margin-top:14px;font-size:16px;opacity:0.9;">
+                Big Data • AI Forecasting • Real-Time Analytics • Smart Cities
+                </div>
                 </div>
             """,
             unsafe_allow_html=True,
@@ -40,7 +43,7 @@ def render_hero(current_time=None):
             padding:18px;">
                 <div style="font-size:44px;">🕒</div>
                 <div id="urbanmind-clock" style="font-size:28px;font-weight:800;color:#124f9d;"></div>
-                <div style="font-size:15px;color:#5a6572;">Live Time</div>
+                <div style="font-size:15px;color:#5a6572;">India Standard Time</div>
                 </div>
             <script>
             function updateClock(){
