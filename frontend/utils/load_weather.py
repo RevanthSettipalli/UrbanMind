@@ -1,152 +1,43 @@
 import pandas as pd
 from pathlib import Path
-import re
-
 
 ROOT = Path(__file__).resolve().parents[2]
-
-PRIMARY_CSV = ROOT / "data" / "weather_stream.csv"
-BACKUP_CSV = ROOT / "data" / "processed" / "weather_clean.csv"
+CSV = ROOT / "data" / "processed_weather.csv"
 
 
 def load_weather():
-
     try:
-
-        if PRIMARY_CSV.exists():
-
-            df = pd.read_csv(
-                PRIMARY_CSV,
-                on_bad_lines="skip"
-            )
-
-        elif BACKUP_CSV.exists():
-
-            df = pd.read_csv(
-                BACKUP_CSV,
-                on_bad_lines="skip"
-            )
-
-        else:
-
+        if not CSV.exists():
             return pd.DataFrame()
 
-    except Exception as e:
+        df = pd.read_csv(CSV)
 
-        print(f"CSV Load Error: {e}")
+        if df.empty:
+            return df
 
-        return pd.DataFrame()
+        # Required columns
+        required_defaults = {
+            "city": "Unknown",
+            "temperature": 0,
+            "humidity": 0,
+            "aqi": 0,
+            "pm25": 0,
+            "pm10": 0,
+            "co": 0,
+            "no2": 0,
+        }
 
+        for col, default in required_defaults.items():
+            if col not in df.columns:
+                df[col] = default
 
-    # Empty protection
-    if df.empty:
+        if "time" in df.columns:
+            df["time"] = pd.to_datetime(df["time"], errors="coerce")
+
+        for col in ["temperature", "humidity", "aqi", "pm25", "pm10", "co", "no2"]:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
+
         return df
 
-
-    # Normalize columns
-    df.columns = (
-        df.columns
-        .astype(str)
-        .str.strip()
-        .str.lower()
-    )
-
-
-    # Normalize common city column aliases
-    city_aliases = [
-        "city_name",
-        "location",
-        "district",
-        "place"
-    ]
-
-    if "city" not in df.columns:
-        for alias in city_aliases:
-            if alias in df.columns:
-                df = df.rename(columns={alias: "city"})
-                break
-
-    # Required columns
-    defaults = {
-        "city": "Unknown",
-        "temperature": 0,
-        "humidity": 0
-    }
-
-
-    for col, value in defaults.items():
-
-        if col not in df.columns:
-
-            df[col] = value
-
-
-    # Clean city values
-    df["city"] = (
-        df["city"]
-        .astype(str)
-        .str.strip()
-        .replace(["", "nan", "None", "NULL"], "Unknown")
-    )
-
-
-    # Ensure air-quality columns always exist
-    for aq_col in [
-        "aqi",
-        "pm25",
-        "pm10",
-        "co",
-        "no2"
-    ]:
-        if aq_col not in df.columns:
-            df[aq_col] = 0
-
-    numeric_cols = [
-        "temperature",
-        "humidity",
-        "aqi",
-        "pm25",
-        "pm10",
-        "co",
-        "no2"
-    ]
-
-
-    for col in numeric_cols:
-        if col not in df.columns:
-            df[col] = 0
-
-        df[col] = pd.to_numeric(
-            df[col],
-            errors="coerce"
-        ).fillna(0)
-
-
-    # Safe datetime conversion
-    if "time" in df.columns:
-
-        df["time"] = pd.to_datetime(
-            df["time"],
-            errors="coerce"
-        )
-
-
-    # Remove completely empty rows
-    df = df.dropna(
-        how="all"
-    )
-
-
-    # Remove duplicate records if present
-    df = df.drop_duplicates()
-
-    # Sort by latest timestamp when available
-    if "time" in df.columns:
-        df = df.sort_values("time")
-
-    # Final safety guard for deployment environments
-    for col in ["aqi", "pm25", "pm10", "co", "no2"]:
-        if col not in df.columns:
-            df[col] = 0
-
-    return df
+    except Exception:
+        return pd.DataFrame()

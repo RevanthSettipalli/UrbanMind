@@ -236,9 +236,11 @@ df["humidity"],
 errors="coerce"
 )
 
+# Drop NA and keep last 3000 records
 df=df.dropna()
-
 df=df.tail(3000)
+if "time" in df.columns:
+    df = df.sort_values("time")
 # Clean city names
 if "city" in df.columns:
     df["city"] = df["city"].astype(str).str.strip()
@@ -285,6 +287,10 @@ if city!="All Cities":
         city
     ]
 
+if df.empty:
+    st.warning("No data available for the selected city")
+    st.stop()
+
 
 # =================================
 # TIME
@@ -319,10 +325,11 @@ avg_hum = round(
     1
 )
 
-latest = (
-    df.sort_values("time")
-    .iloc[-1]
-)
+if df.empty:
+    st.warning("No analytics data available")
+    st.stop()
+
+latest = df.sort_values("time").iloc[-1]
 
 urban = calculate_score(
     float(latest.get("temperature", 0)),
@@ -363,11 +370,11 @@ forecast_confidence = forecast_result["confidence"]
 forecast_model = forecast_result["model"]
 
 # LSTM Execution
-lstm_result = forecast_lstm(
-    df,
-    target_column="temperature",
-    forecast_days=30
-)
+lstm_result = {
+    "forecast": [],
+    "rmse": 0,
+    "model": "Disabled"
+}
 
 lstm_forecast = lstm_result.get("forecast", [])
 lstm_rmse = lstm_result.get("rmse", 0)
@@ -1189,27 +1196,31 @@ selected_city_xai = st.selectbox(
 
 if "shap_df" in locals() and "shap_values" in locals():
 
-    city_idx = shap_df[
+    city_matches = shap_df[
         shap_df["city"] == selected_city_xai
-    ].index[0]
+    ]
 
-    city_shap = pd.DataFrame({
-        "Feature": features,
-        "Contribution": shap_values[city_idx]
-    }).sort_values("Contribution", ascending=False)
+    if city_matches.empty:
+        st.info("No explainability data available for this city.")
+    else:
+        city_idx = city_matches.index[0]
+        city_shap = pd.DataFrame({
+            "Feature": features,
+            "Contribution": shap_values[city_idx]
+        }).sort_values("Contribution", ascending=False)
 
-    city_fig = px.bar(
-        city_shap,
-        x="Feature",
-        y="Contribution",
-        color="Contribution",
-        title=f"Why {selected_city_xai} Performs This Way"
-    )
+        city_fig = px.bar(
+            city_shap,
+            x="Feature",
+            y="Contribution",
+            color="Contribution",
+            title=f"Why {selected_city_xai} Performs This Way"
+        )
 
-    st.plotly_chart(
-        city_fig,
-        use_container_width=True
-    )
+        st.plotly_chart(
+            city_fig,
+            use_container_width=True
+        )
 
 else:
     st.info("City-level SHAP explanations unavailable because SHAP model could not be generated.")
@@ -2036,29 +2047,6 @@ r3.metric(
 r4.metric("Portfolio Grade", "Research Grade")
 
 st.subheader("🏛 Executive Board Briefing")
-
-# --- Research Score dynamic block: insert risk_score_value assignment above research_score calculation
-# Find block:
-# r3.metric(
-#     "Research Score",
-#     f"{research_score}/100"
-# )
-# Immediately above research_score = round(
-# Insert:
-risk_score_value = predictive_data["risk_intelligence"]["overall_risk"]
-
-# (The actual research_score calculation block is not shown above, but let's find and patch it.)
-
-# In the calculation of research_score, replace +(100 - risk["overall_risk"]) with +(100 - risk_score_value)
-
-# The likely code block (not shown above) looks like:
-# research_score = round(
-#     ... + (100 - risk["overall_risk"]) ...
-# )
-# So, we will patch to:
-#     ... + (100 - risk_score_value) ...
-
-# Since the code isn't shown, just insert the risk_score_value assignment here as requested.
 
 st.success(
     f"UrbanMind Executive Report | National Score: {urban} | Best City: {best_city} | Priority City: {worst_city}"
