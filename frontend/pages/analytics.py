@@ -17,10 +17,16 @@ from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 from streamlit_folium import st_folium
 
+import sys
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.append(str(ROOT))
+
 from frontend.utils.load_weather import load_weather
 from frontend.utils.auth_guard import require_login
 from frontend.utils.sidebar import render_sidebar
-
 from frontend.utils.settings import (
     apply_theme,
     load_settings,
