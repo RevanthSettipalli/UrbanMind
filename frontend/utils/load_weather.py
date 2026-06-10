@@ -7,10 +7,15 @@ CSV = ROOT / "data" / "processed_weather.csv"
 
 def load_weather():
     try:
+        print(f"LOOKING FOR CSV: {CSV}")
+        print(f"CSV EXISTS: {CSV.exists()}")
         if not CSV.exists():
+            print("processed_weather.csv not found")
             return pd.DataFrame()
 
         df = pd.read_csv(CSV)
+        print(f"ROWS LOADED: {len(df)}")
+        print(f"COLUMNS: {list(df.columns)}")
 
         if df.empty:
             return df
@@ -37,7 +42,9 @@ def load_weather():
         for col in ["temperature", "humidity", "aqi", "pm25", "pm10", "co", "no2"]:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
+        print(f"FINAL ROWS: {len(df)}")
         return df
 
-    except Exception:
-        return pd.DataFrame()
+    except Exception as e:
+        print(f"LOAD_WEATHER ERROR: {e}")
+        raise
