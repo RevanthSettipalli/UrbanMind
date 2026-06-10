@@ -579,6 +579,9 @@ ranking_df = ranking_df.sort_values(
 
 render_hero()
 
+# Global Executive Visualization Theme
+EXECUTIVE_TEMPLATE = "plotly_white"
+
 # ====================================
 # MASTER'S PORTFOLIO EXECUTIVE LAYER
 # ====================================
@@ -595,18 +598,48 @@ exec5.metric('🧠 Digital Twin', 'ACTIVE')
 
 with st.expander('🏗 UrbanMind System Architecture', expanded=False):
     st.markdown('''
-    Sensors & APIs
-    ↓
-    Data Pipeline
-    ↓
-    PostgreSQL Storage
-    ↓
-    AI / ML Intelligence Layer
-    ↓
-    UrbanMind Digital Twin
-    ↓
-    Executive Dashboard
+    🌐 Sensors & Weather APIs
+        ↓
+    ⚡ Real-Time Data Pipeline
+        ↓
+    🗄 PostgreSQL Storage Layer
+        ↓
+    🤖 AI / ML Intelligence Engine
+        ↓
+    🧠 Urban Digital Twin
+        ↓
+    📊 Executive Decision Dashboard
+        ↓
+    🚀 Railway Production Deployment
     ''')
+c1, c2 = st.columns(2)
+
+with c1:
+    fig_rank = px.bar(
+    ranking_df.head(10),
+    x='City',
+    y='Score',
+    color='Score',
+    text='Score',
+    title='Top City Performance Rankings'
+)
+    fig_rank.update_traces(textposition="outside")
+    fig_rank.update_layout(template=EXECUTIVE_TEMPLATE, height=420)
+    st.plotly_chart(fig_rank, use_container_width=True)
+
+with c2:
+    pollution_df = df.groupby('city')['aqi'].mean().reset_index()
+    fig_pollution = px.bar(
+    pollution_df.sort_values('aqi', ascending=False),
+    x='city',
+    y='aqi',
+    color='aqi',
+    text='aqi',
+    title='Pollution Intelligence Ranking'
+)
+    fig_pollution.update_traces(textposition="outside")
+    fig_pollution.update_layout(template=EXECUTIVE_TEMPLATE, height=420)
+    st.plotly_chart(fig_pollution, use_container_width=True)
 
 with st.expander('🧠 Digital Twin Status', expanded=False):
     d1, d2, d3, d4 = st.columns(4)
@@ -911,6 +944,18 @@ worst_city = ranking_df.iloc[-1]['City']
 st.info(
     f"UrbanMind AI reports national readiness remains stable. {best_city} leads national performance while {worst_city} requires priority attention. Monitoring is active across {df['city'].nunique()} cities with {len(alerts)} active alerts."
 )
+
+st.success(
+    f"""
+Executive Narrative:
+
+UrbanMind identifies {best_city} as the strongest performing city based on environmental stability, governance readiness and urban resilience.
+
+{worst_city} remains the highest intervention priority.
+
+National readiness currently stands at {national_score}/100 with AI confidence of {confidence}%.
+"""
+)
 st.subheader("🔮 AI Forecast Center")
 
 forecast_temp = round(prediction, 1)
@@ -994,6 +1039,11 @@ st.caption(
     "Comparative performance, environmental exposure and predictive intelligence visualization layer."
 )
 
+e1, e2, e3 = st.columns(3)
+e1.metric('🏆 Best City Score', best_score)
+e2.metric('⚠ Lowest City Score', worst_score)
+e3.metric('📊 Performance Gap', round(best_score - worst_score, 1))
+
 viz_left, viz_right = st.columns(2)
 
 with viz_left:
@@ -1047,6 +1097,32 @@ with c2:
 )
     fig_pollution.update_traces(textposition="outside")
     st.plotly_chart(fig_pollution, use_container_width=True)
+
+chart1, chart2 = st.columns(2)
+
+with chart1:
+    risk_df = ranking_df.copy()
+    risk_df['Risk'] = 100 - risk_df['Score']
+
+    fig_line = px.line(
+        risk_df,
+        x='City',
+        y='Risk',
+        markers=True,
+        title='National Urban Risk Trend'
+    )
+    fig_line.update_layout(template=EXECUTIVE_TEMPLATE, height=420)
+    st.plotly_chart(fig_line, use_container_width=True)
+
+with chart2:
+    fig_area = px.area(
+        ranking_df,
+        x='City',
+        y='Score',
+        title='National Readiness Distribution'
+    )
+    fig_area.update_layout(template=EXECUTIVE_TEMPLATE, height=420)
+    st.plotly_chart(fig_area, use_container_width=True)
 
 # ====================================
 # CHARTS
@@ -1125,6 +1201,32 @@ with x:
         use_container_width=True
     )
 st.markdown('---')
+st.markdown('---')
+st.header('🧠 Executive Decision Intelligence')
+
+intel1, intel2 = st.columns(2)
+
+with intel1:
+    st.success(
+        f'Policy Recommendation: Prioritize intervention programs in {worst_city} while replicating governance strategies from {best_city}.'
+    )
+
+with intel2:
+    st.info(
+        f'National Readiness: {national_score}/100 | AI Confidence: {confidence}% | Active Alerts: {len(alerts)}'
+    )
+
+st.header('🤖 AI Intelligence Stack')
+
+ai1, ai2, ai3, ai4 = st.columns(4)
+
+ai1.success('Forecast Engine ACTIVE')
+ai2.success('Risk Engine ACTIVE')
+ai3.success('Recommendation AI ACTIVE')
+ai4.success('Anomaly Detection ACTIVE')
+
+st.info('UrbanMind combines forecasting, anomaly detection, urban risk intelligence and explainable recommendations into a unified decision-support platform.')
+
 st.header('🎯 Research Contribution Highlights')
 
 r1, r2, r3, r4 = st.columns(4)
@@ -1137,6 +1239,30 @@ r4.metric('Governance Confidence', f'{confidence}%')
 st.info(
     'UrbanMind integrates Explainable AI, Predictive Analytics, Urban Risk Intelligence, Digital Twin Simulation and Governance Decision Support into a unified Smart City platform.'
 )
+
+st.header('🚀 Production Deployment')
+
+d1, d2, d3, d4 = st.columns(4)
+
+d1.metric('Platform', 'Railway')
+d2.metric('Database', 'PostgreSQL')
+d3.metric('ML Stack', 'Scikit-Learn')
+d4.metric('Maps', 'Folium')
+
+st.success('Production deployment architecture: Streamlit Frontend → PostgreSQL → AI/ML Intelligence Layer → Digital Twin Analytics → Executive Dashboard')
+
+st.subheader('🎓 Master’s & Research Value')
+
+st.markdown('''
+• Explainable AI for Smart City Governance
+• Digital Twin based National Urban Simulation
+• Predictive Analytics for Urban Readiness Forecasting
+• Environmental Risk Intelligence
+• Governance Decision Support System
+• Real-Time Executive Monitoring Platform
+• AI-driven Policy Recommendation Engine
+• Urban Resilience Scoring Framework
+''')
 
 st.success(
     f"UrbanMind Executive Report | National Score: {national_score} | Best City: {best_city} | Priority City: {worst_city}"
