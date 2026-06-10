@@ -1,5 +1,6 @@
 import pandas as pd
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -51,6 +52,20 @@ def load_weather():
     )
 
 
+    # Normalize common city column aliases
+    city_aliases = [
+        "city_name",
+        "location",
+        "district",
+        "place"
+    ]
+
+    if "city" not in df.columns:
+        for alias in city_aliases:
+            if alias in df.columns:
+                df = df.rename(columns={alias: "city"})
+                break
+
     # Required columns
     defaults = {
         "city": "Unknown",
@@ -64,6 +79,15 @@ def load_weather():
         if col not in df.columns:
 
             df[col] = value
+
+
+    # Clean city values
+    df["city"] = (
+        df["city"]
+        .astype(str)
+        .str.strip()
+        .replace(["", "nan", "None", "NULL"], "Unknown")
+    )
 
 
     # Numeric conversion
@@ -94,6 +118,14 @@ def load_weather():
     df = df.dropna(
         how="all"
     )
+
+
+    # Remove duplicate records if present
+    df = df.drop_duplicates()
+
+    # Sort by latest timestamp when available
+    if "time" in df.columns:
+        df = df.sort_values("time")
 
 
     return df

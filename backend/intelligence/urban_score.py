@@ -27,15 +27,23 @@ def calculate_score(
     if forecast > 38:
         score -= 5
 
-    # AQI (dominant factor but less extreme)
-    aqi_penalty = {
-        1: 0,
-        2: 8,
-        3: 18,
-        4: 30,
-        5: 45
-    }
-    score -= aqi_penalty.get(int(aqi), 0)
+    # AQI impact
+    try:
+        aqi = float(aqi)
+    except:
+        aqi = 0
+
+    if aqi <= 5:
+        aqi_penalty = {
+            1: 0,
+            2: 8,
+            3: 18,
+            4: 30,
+            5: 45
+        }
+        score -= aqi_penalty.get(int(aqi), 0)
+    else:
+        score -= min(45, aqi * 0.25)
 
     # PM2.5 impact
     if pm25 > 15:
@@ -53,7 +61,14 @@ def calculate_score(
     if no2 > 40:
         score -= min(12, (no2 - 40) * 0.20)
 
-    score = max(25, min(95, round(score)))
+    # Tie-break variation for realistic rankings
+    score += (
+        max(0, (100 - min(aqi, 100))) * 0.03
+        + max(0, (70 - abs(hum - 70))) * 0.02
+        + max(0, (35 - abs(temp - 28))) * 0.02
+    )
+
+    score = max(25, min(95, round(score, 1)))
 
     if score >= 80:
         level = "Excellent"

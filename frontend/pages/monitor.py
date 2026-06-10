@@ -9,7 +9,7 @@ import sys
 
 from pathlib import Path
 from datetime import datetime
-from utils.load_weather import load_weather
+from frontend.utils.load_weather import load_weather
 
 
 # =====================================
@@ -26,9 +26,9 @@ if str(ROOT) not in sys.path:
 # IMPORTS
 # =====================================
 
-from utils.auth_guard import require_login
-from utils.sidebar import render_sidebar
-from utils.settings import (
+from frontend.utils.auth_guard import require_login
+from frontend.utils.sidebar import render_sidebar
+from frontend.utils.settings import (
     apply_theme,
     load_settings,
     export_data

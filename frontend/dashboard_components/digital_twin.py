@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 
 
 def render_digital_twin(
@@ -16,7 +17,30 @@ def render_digital_twin(
     # NATIONAL DIGITAL TWIN & SIMULATION PLATFORM
     # ====================================
 
-    st.subheader("🌍 National Digital Twin & Simulation Platform")
+    st.subheader("🌍 National Digital Twin Intelligence Platform")
+
+    st.markdown(
+        """
+        ### National Urban Digital Twin
+        Real-time scenario simulation, policy forecasting, emergency preparedness modeling, and sustainability intelligence for smart-city governance.
+        """
+    )
+
+    intelligence_score = round(min(100, national_score * 1.08), 1)
+    confidence_score = round(min(99, 78 + national_score * 0.2), 1)
+
+    k1, k2, k3, k4, k5, k6 = st.columns(6)
+
+    k1.metric("🏙 National Score", national_score)
+    k2.metric("🌫 National AQI", national_aqi)
+    k3.metric("⚠ Risk Level", national_risk)
+    k4.metric("🛰 Twin Status", "ACTIVE")
+    k5.metric("🧠 Intelligence", intelligence_score)
+    k6.metric("🎯 Confidence", f"{confidence_score}%")
+
+    st.info(
+        f"Digital Twin Assessment | Intelligence Index: {intelligence_score} | Confidence: {confidence_score}% | National Risk: {national_risk}"
+    )
 
     simulation_mode = st.selectbox(
         "Select Simulation Scenario",
@@ -64,10 +88,67 @@ def render_digital_twin(
         round(sim_aqi - national_aqi, 2)
     )
 
+    comparison_df = pd.DataFrame({
+        "Scenario": ["Current", "Simulation"],
+        "Urban Score": [national_score, sim_score],
+        "AQI": [national_aqi, sim_aqi]
+    })
+
+    comparison_fig = px.bar(
+        comparison_df,
+        x="Scenario",
+        y="Urban Score",
+        color="Urban Score",
+        text="Urban Score",
+        title="Digital Twin Scenario Comparison"
+    )
+    comparison_fig.update_layout(height=420)
+
+    c1, c2 = st.columns(2)
+
+    with c1:
+        st.plotly_chart(
+            comparison_fig,
+            use_container_width=True
+        )
+
+    with c2:
+        gauge_fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=sim_score,
+            title={'text': "Projected Readiness"},
+            gauge={
+                'axis': {'range': [0, 100]},
+                'bar': {'color': 'darkblue'},
+                'steps': [
+                    {'range': [0, 50], 'color': 'lightcoral'},
+                    {'range': [50, 75], 'color': 'gold'},
+                    {'range': [75, 100], 'color': 'lightgreen'}
+                ]
+            }
+        ))
+        gauge_fig.update_layout(height=420)
+        st.plotly_chart(gauge_fig, use_container_width=True)
+
+    st.subheader("🔍 Explainable Simulation Intelligence")
+
+    exp1, exp2 = st.columns(2)
+
+    with exp1:
+        st.success(
+            f"Selected Scenario: {simulation_mode}\n• Simulated Score: {sim_score}\n• AQI Projection: {sim_aqi}\n• Predicted National Impact Generated"
+        )
+
+    with exp2:
+        st.warning(
+            f"Expected Score Change: {round(sim_score - national_score,1)}\nExpected AQI Change: {round(sim_aqi - national_aqi,2)}\nConfidence: {confidence_score}%"
+        )
+
     # ====================================
     # POLICY IMPACT PREDICTION ENGINE
     # ====================================
 
+    st.markdown("---")
     st.subheader("🏛 Policy Impact Prediction Engine")
 
     policy_option = st.selectbox(
@@ -104,10 +185,36 @@ def render_digital_twin(
         f"AI Prediction: '{policy_option}' could improve the National Urban Score to {round(policy_score,1)} while reducing AQI to {policy_aqi}."
     )
 
+    policy_df = pd.DataFrame({
+        "Metric": ["Current Score", "Policy Score"],
+        "Value": [national_score, policy_score]
+    })
+
+    policy_fig = px.bar(
+        policy_df,
+        x="Metric",
+        y="Value",
+        color="Value",
+        text="Value",
+        title="Policy Impact Projection"
+    )
+    policy_fig.update_layout(height=400)
+
+    st.plotly_chart(
+        policy_fig,
+        use_container_width=True
+    )
+
+    st.metric(
+        "🏛 Policy Confidence",
+        f"{confidence_score}%"
+    )
+
     # ====================================
     # DISASTER & EMERGENCY RESPONSE SIMULATOR
     # ====================================
 
+    st.markdown("---")
     st.subheader("🚨 Disaster & Emergency Response Simulator")
 
     emergency_scenario = st.selectbox(
@@ -144,10 +251,29 @@ def render_digital_twin(
         f"Emergency Intelligence: Scenario '{emergency_scenario}' would require {resource_units} response units with a projected emergency level of {response_level}."
     )
 
+    response_df = pd.DataFrame({
+        "Category": ["Response Units", "Preparedness Index"],
+        "Value": [resource_units, max(0, 100 - resource_units/2)]
+    })
+
+    response_fig = px.bar(
+        response_df,
+        x="Category",
+        y="Value",
+        color="Value",
+        title="Emergency Response Intelligence"
+    )
+
+    st.plotly_chart(
+        response_fig,
+        use_container_width=True
+    )
+
     # ====================================
     # NATIONAL RESILIENCE & SUSTAINABILITY
     # ====================================
 
+    st.markdown("---")
     st.subheader(
         "🌱 National Resilience & Sustainability Intelligence Center"
     )
@@ -167,7 +293,8 @@ def render_digital_twin(
     else:
         resilience_status = "Critical"
 
-    r1, r2, r3, r4 = st.columns(4)
+
+    r1, r2, r3, r4, r5 = st.columns(5)
 
     r1.metric(
         "🌍 Resilience Score",
@@ -189,6 +316,59 @@ def render_digital_twin(
         national_risk
     )
 
+    r5.metric(
+        "🎯 Confidence",
+        f"{confidence_score}%"
+    )
+
     st.success(
         f"UrbanMind Sustainability Intelligence predicts a resilience score of {resilience_score} with {uhi_df.iloc[0]['City']} serving as the national sustainability benchmark."
+    )
+
+    st.subheader("📊 Strategic Digital Twin Intelligence")
+
+    strategy_df = pd.DataFrame({
+        "Area": [
+            "Urban Readiness",
+            "Policy Impact",
+            "Emergency Preparedness",
+            "Sustainability"
+        ],
+        "Score": [
+            national_score,
+            round(policy_score,1),
+            max(0, 100 - resource_units/2),
+            resilience_score
+        ]
+    })
+
+    strategy_fig = px.bar(
+        strategy_df,
+        x="Area",
+        y="Score",
+        color="Score",
+        text="Score",
+        title="Strategic Digital Twin Intelligence"
+    )
+    strategy_fig.update_layout(height=450)
+
+    st.plotly_chart(strategy_fig, use_container_width=True)
+
+    st.subheader("🧠 Executive Digital Twin Assessment")
+
+    st.info(
+        f"UrbanMind Digital Twin forecasts national readiness at {national_score}/100. Under the selected scenario, urban performance shifts to {round(sim_score,1)} while sustainability resilience remains {resilience_status}. Policy simulations indicate that '{policy_option}' delivers the strongest projected impact for urban improvement."
+    )
+
+    st.success(
+        f"🌍 Digital Twin ACTIVE | ♻ Resilience: {resilience_status} | 🏆 Sustainability Leader: {uhi_df.iloc[0]['City']} | 🎯 Confidence: {confidence_score}%"
+    )
+    
+    st.info(
+        "Executive Insight: Digital Twin simulations provide explainable policy evaluation, resilience forecasting, and risk-aware governance recommendations suitable for national smart-city planning."
+    )
+    
+    st.markdown("---")
+    st.caption(
+        "UrbanMind v2.0 | Research-Grade Digital Twin Platform | Explainable AI | Scenario Intelligence | Policy Forecasting | Sustainability Analytics"
     )

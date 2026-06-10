@@ -85,3 +85,4 @@ wrapt==2.2.1
 xyzservices==2026.3.0
 sqlalchemy
 psycopg2-binary
+SQLAlchemy

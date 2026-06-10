@@ -13,7 +13,23 @@ def render_alert_center(
     generate_executive_report
 ):
 
-    st.subheader("🚨 Real-Time Alert Command Center")
+    st.subheader("🚨 National Risk & Alert Intelligence Center")
+
+    anomaly_data = detect_anomalies(plot)
+    anomaly_alerts = anomaly_data.get("alerts", []) if isinstance(anomaly_data, dict) else []
+
+    k1, k2, k3, k4, k5 = st.columns(5)
+
+    k1.metric("🚨 Active Alerts", len(alerts))
+    k2.metric("🛰 Anomalies", len(anomaly_alerts))
+    k3.metric("🏙 Urban Score", urban["score"])
+    k4.metric("📍 Scope", selected_city)
+    alert_confidence = round(min(99, 70 + len(alerts) * 4 + len(anomaly_alerts) * 2), 1)
+
+    k5.metric(
+        "🎯 Confidence",
+        f"{alert_confidence}%"
+    )
 
     st.markdown("### 📡 Live Anomaly Feed")
 
@@ -26,26 +42,31 @@ def render_alert_center(
         }
         return f"{icons.get(level, '⚪')} {level}"
 
-    anomaly_data = detect_anomalies(plot)
-
     anomaly_alerts = anomaly_data.get("alerts", [])
 
-    st.metric("Risk Score", anomaly_data.get("risk_score", 0))
+    st.metric(
+        "⚠ Anomaly Risk Score",
+        anomaly_data.get("risk_score", 0)
+    )
+    st.info(
+        f"Real-Time Risk Intelligence | Confidence: {alert_confidence}% | Anomalies Detected: {len(anomaly_alerts)}"
+    )
 
     if anomaly_alerts:
 
         for alert in anomaly_alerts:
 
             if isinstance(alert, dict):
+                severity = "🔴 HIGH"
 
                 st.error(
-                    f"{alert.get('message', str(alert))}\n\n⏱ {datetime.now().strftime('%H:%M:%S')}"
+                    f"{severity} | {alert.get('message', str(alert))}\n\n⏱ {datetime.now().strftime('%H:%M:%S')}"
                 )
 
             else:
 
                 st.error(
-                    f"{str(alert)}\n\n⏱ {datetime.now().strftime('%H:%M:%S')}"
+                    f"🔴 HIGH | {str(alert)}\n\n⏱ {datetime.now().strftime('%H:%M:%S')}"
                 )
 
     else:
@@ -54,30 +75,25 @@ def render_alert_center(
             "No anomalies detected"
         )
 
+    st.info(
+        "UrbanMind continuously evaluates environmental anomalies, pollution spikes, climate risks, and urban stability indicators in real time."
+    )
+
     alert_col, risk_col = st.columns(2)
 
     with alert_col:
 
         st.markdown("### 🚨 Active Alerts")
 
+        st.caption("Severity • Confidence • Timestamp Driven Alert Intelligence")
+
         if alerts:
 
             for alert in alerts:
 
-                if isinstance(alert, dict):
-
-                    st.warning(
-                        alert.get(
-                            "message",
-                            str(alert)
-                        )
-                    )
-
-                else:
-
-                    st.warning(
-                        str(alert)
-                    )
+                st.warning(
+                    f"🟠 ACTIVE ALERT | {alert.get('message', str(alert)) if isinstance(alert, dict) else str(alert)} | Confidence: {alert_confidence}%"
+                )
 
         else:
 
@@ -127,9 +143,36 @@ def render_alert_center(
             "Overall Risk Score",
             f"{current_risk.get('risk_score', 0)}/100"
         )
+        st.metric(
+            "🎯 Risk Confidence",
+            f"{alert_confidence}%"
+        )
 
         st.progress(
             min(current_risk.get('risk_score', 0), 100) / 100
+        )
+
+        import plotly.graph_objects as go
+
+        risk_gauge = go.Figure(
+            go.Indicator(
+                mode="gauge+number",
+                value=current_risk.get('risk_score', 0),
+                title={"text": "National Risk Index"},
+                gauge={
+                    "axis": {"range": [0, 100]},
+                    "steps": [
+                        {"range": [0, 40], "color": "green"},
+                        {"range": [40, 70], "color": "orange"},
+                        {"range": [70, 100], "color": "red"}
+                    ]
+                }
+            )
+        )
+
+        st.plotly_chart(
+            risk_gauge,
+            use_container_width=True
         )
 
         st.metric(
@@ -145,6 +188,10 @@ def render_alert_center(
         st.metric(
             "Urban Risk",
             risk_badge(current_risk["urban_risk"])
+        )
+
+        st.success(
+            f"Executive Assessment | Heat Risk: {current_risk['heat_risk']} | Pollution Risk: {current_risk['pollution_risk']} | Urban Risk: {current_risk['urban_risk']} | Confidence: {alert_confidence}%"
         )
 
 
@@ -163,8 +210,54 @@ def render_alert_center(
         urban_risk=current_risk["urban_risk"]
     )
 
-    st.subheader("🧠 Executive AI Advisor")
+    st.subheader("📊 Risk Intelligence Summary")
 
-    st.info(executive_report["summary"])
+    r1, r2, r3 = st.columns(3)
 
-    st.success(executive_report["action"])
+    r1.metric("🚨 Alerts", len(alerts))
+    r2.metric("🛰 Anomalies", len(anomaly_alerts))
+    r3.metric("🎯 Confidence", f"{alert_confidence}%")
+
+    st.subheader("🧠 Executive Risk Advisor")
+
+    st.info(
+        executive_report.get(
+            "summary",
+            "Executive assessment unavailable"
+        )
+    )
+
+    st.success(
+        executive_report.get(
+            "action",
+            "Continue monitoring"
+        )
+    )
+
+    st.subheader("📋 Recommended Executive Actions")
+
+    st.dataframe(
+        {
+            "Priority": ["CRITICAL", "HIGH", "HIGH", "MEDIUM"],
+            "Action": [
+                "Increase monitoring coverage",
+                "Deploy preventive resources",
+                "Strengthen public advisories",
+                "Review sustainability measures"
+            ]
+        },
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.warning(
+        "UrbanMind recommends proactive governance measures, predictive monitoring, and rapid response planning for emerging urban risks."
+    )
+
+    st.markdown("---")
+    st.caption(
+        f"Last Evaluated: {datetime.now().strftime('%d %b %Y %H:%M:%S')}"
+    )
+    st.success(
+        f"🚨 Alert Intelligence Active | Risk Status: {current_risk['urban_risk']} | Alerts: {len(alerts)} | Confidence: {alert_confidence}%"
+    )

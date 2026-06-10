@@ -1,5 +1,5 @@
 import streamlit as st
-from utils.auth_guard import logout
+from frontend.utils.auth_guard import logout
 
 
 def render_sidebar():

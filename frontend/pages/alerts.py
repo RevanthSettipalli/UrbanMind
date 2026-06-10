@@ -7,8 +7,8 @@ from pathlib import Path
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 
-from utils.auth_guard import require_login
-from utils.sidebar import render_sidebar
+from frontend.utils.auth_guard import require_login
+from frontend.utils.sidebar import render_sidebar
 
 
 # =====================================

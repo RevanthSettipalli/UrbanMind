@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
+import plotly.express as px
 
 from backend.intelligence.urban_score import calculate_score
 
@@ -11,14 +12,17 @@ def render_rankings(
     prediction
 ):
 
-
     # ====================================
     # CITY RANKINGS
     # ====================================
 
-    st.subheader("🏆 City Rankings")
+    st.subheader("🏆 National City Performance Rankings")
 
     ranking_display = ranking_df.copy()
+
+    # Round Score column to 1 decimal if present
+    if "Score" in ranking_display.columns:
+        ranking_display["Score"] = ranking_display["Score"].round(1)
 
     if len(ranking_display) >= 1:
         ranking_display.loc[ranking_display.index[0], "City"] = f"🥇 {ranking_display.iloc[0]['City']}"
@@ -29,11 +33,27 @@ def render_rankings(
     if len(ranking_display) >= 3:
         ranking_display.loc[ranking_display.index[2], "City"] = f"🥉 {ranking_display.iloc[2]['City']}"
 
-    st.dataframe(
-        ranking_display,
-        use_container_width=True,
-        hide_index=True
-    )
+    left_rank, right_rank = st.columns([2, 1])
+
+    with left_rank:
+        fig_rank = px.bar(
+            ranking_df.head(10),
+            x="City",
+            y="Score",
+            title="Top Urban Performance Rankings"
+        )
+
+        st.plotly_chart(
+            fig_rank,
+            use_container_width=True
+        )
+
+    with right_rank:
+        st.dataframe(
+            ranking_display,
+            width='stretch',
+            hide_index=True
+        )
 
     # Dashboard is currently calling:
     # render_rankings(ranking_df, pollution_df)
@@ -58,11 +78,15 @@ def render_rankings(
             f"📉 Worst City: {worst['City']} | Score: {worst[score_col]}"
         )
 
+    st.info(
+        f"🏆 National Leader: {best['City']} | ⚠ Priority Intervention: {worst['City']}"
+    )
+
     # ====================================
     # POLLUTION LEADERBOARD
     # ====================================
 
-    st.subheader("🏭 Pollution Leaderboard")
+    st.subheader("🏭 Environmental Risk Intelligence")
 
     pollution_rows = []
 
@@ -99,11 +123,38 @@ def render_rankings(
         ascending=False
     )
 
-    st.dataframe(
-        pollution_df,
-        use_container_width=True,
-        hide_index=True
-    )
+    pollution_display = pollution_df.copy()
+
+    if len(pollution_display) >= 1:
+        pollution_display.iloc[0, pollution_display.columns.get_loc("City")] = f"🥇 {pollution_display.iloc[0]['City']}"
+
+    if len(pollution_display) >= 2:
+        pollution_display.iloc[1, pollution_display.columns.get_loc("City")] = f"🥈 {pollution_display.iloc[1]['City']}"
+
+    if len(pollution_display) >= 3:
+        pollution_display.iloc[2, pollution_display.columns.get_loc("City")] = f"🥉 {pollution_display.iloc[2]['City']}"
+
+    p_left, p_right = st.columns([2,1])
+
+    with p_left:
+        pollution_chart = px.bar(
+            pollution_df,
+            x="City",
+            y="Pollution Index",
+            title="Pollution Risk Ranking"
+        )
+
+        st.plotly_chart(
+            pollution_chart,
+            use_container_width=True
+        )
+
+    with p_right:
+        st.dataframe(
+            pollution_display,
+            width='stretch',
+            hide_index=True
+        )
 
     most_polluted = pollution_df.iloc[0]
     least_polluted = pollution_df.iloc[-1]
@@ -127,7 +178,7 @@ def render_rankings(
     # ====================================
 
     st.subheader(
-        "💚 Urban Health Index"
+        "💚 Urban Health Intelligence"
     )
 
     uhi_rows = []
@@ -181,11 +232,39 @@ def render_rankings(
         ascending=False
     )
 
-    st.dataframe(
-        uhi_df,
-        use_container_width=True,
-        hide_index=True
-    )
+    uhi_display = uhi_df.copy()
+
+    if len(uhi_display) >= 1:
+        uhi_display.iloc[0, uhi_display.columns.get_loc("City")] = f"🥇 {uhi_display.iloc[0]['City']}"
+
+    if len(uhi_display) >= 2:
+        uhi_display.iloc[1, uhi_display.columns.get_loc("City")] = f"🥈 {uhi_display.iloc[1]['City']}"
+
+    if len(uhi_display) >= 3:
+        uhi_display.iloc[2, uhi_display.columns.get_loc("City")] = f"🥉 {uhi_display.iloc[2]['City']}"
+
+    h_left, h_right = st.columns([2,1])
+
+    with h_left:
+        health_chart = px.bar(
+            uhi_df,
+            x="City",
+            y="Urban Health Index",
+            color="Urban Health Index",
+            title="Urban Health Intelligence Ranking"
+        )
+
+        st.plotly_chart(
+            health_chart,
+            use_container_width=True
+        )
+
+    with h_right:
+        st.dataframe(
+            uhi_display,
+            width='stretch',
+            hide_index=True
+        )
 
     best_health = uhi_df.iloc[0]
     worst_health = uhi_df.iloc[-1]
@@ -204,20 +283,25 @@ def render_rankings(
             f"❤️‍🩹 Least Healthy City: {worst_health['City']} ({worst_health['Urban Health Index']})"
         )
 
-    uhi_fig = go.Figure()
+    # Urban Health bar chart section removed
 
-    uhi_fig.add_bar(
-        x=uhi_df["City"],
-        y=uhi_df["Urban Health Index"]
+    st.markdown("### 📊 National Ranking Intelligence")
+
+    summary1, summary2, summary3 = st.columns(3)
+
+    summary1.metric(
+        "🏆 Best Urban Score",
+        round(float(best_health['Urban Health Index']), 1)
     )
 
-    uhi_fig.update_layout(
-        title="Urban Health Index Ranking (Smart City Score)"
+    summary2.metric(
+        "🌿 Cleanest City",
+        least_polluted['City']
     )
 
-    st.plotly_chart(
-        uhi_fig,
-        use_container_width=True
+    summary3.metric(
+        "⚠ Highest Risk City",
+        most_polluted['City']
     )
 
     return pollution_df, uhi_df

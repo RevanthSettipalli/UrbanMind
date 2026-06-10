@@ -9,11 +9,11 @@ from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 from streamlit_folium import st_folium
 
-from utils.load_weather import load_weather
-from utils.auth_guard import require_login
-from utils.sidebar import render_sidebar
+from frontend.utils.load_weather import load_weather
+from frontend.utils.auth_guard import require_login
+from frontend.utils.sidebar import render_sidebar
 
-from utils.settings import (
+from frontend.utils.settings import (
     apply_theme,
     load_settings,
     export_data
@@ -21,6 +21,9 @@ from utils.settings import (
 
 from backend.intelligence.predictive_analytics import (
     predictive_report
+)
+from backend.intelligence.urban_score import (
+    calculate_score
 )
 
 
@@ -135,6 +138,9 @@ st_autorefresh(
 # =================================
 
 df = load_weather()
+st.write("Columns:", df.columns.tolist())
+st.write("Unique Cities:", df["city"].unique())
+st.write(df[["city"]].head(20))
 
 data_age_seconds = 0
 last_dataset_update = "Unavailable"
@@ -260,42 +266,31 @@ updated_time = IST.strftime(
 # SCORE
 # =================================
 
-avg_temp=round(
-df.temperature.mean(),
-1
+avg_temp = round(
+    df.temperature.mean(),
+    1
 )
 
-avg_hum=round(
-df.humidity.mean(),
-1
+avg_hum = round(
+    df.humidity.mean(),
+    1
 )
 
-urban=int(
-
-max(
-
-70,
-
-100
-
--
-
-max(
-0,
-avg_temp-30
+latest = (
+    df.sort_values("time")
+    .iloc[-1]
 )
 
--
-
-max(
-0,
-(avg_hum-70)/2
-)
-
-)
-
-)
-
+urban = calculate_score(
+    float(latest.get("temperature", 0)),
+    float(latest.get("humidity", 0)),
+    float(latest.get("temperature", 0)),
+    float(latest.get("aqi", 1)),
+    float(latest.get("pm25", 0)),
+    float(latest.get("pm10", 0)),
+    float(latest.get("co", 0)),
+    float(latest.get("no2", 0))
+)["score"]
 
 # =================================
 # PREDICTIVE INTELLIGENCE
@@ -428,26 +423,31 @@ f4.metric(
 # KPI
 # =================================
 
-a,b,c,d=st.columns(4)
+a,b,c,d,e=st.columns(5)
 
 a.metric(
-"🏙 Urban Score",
-urban
+    "🏙 Urban Score",
+    urban
 )
 
 b.metric(
-"🌡 Avg Temp",
-f"{avg_temp}°C"
+    "🌡 Avg Temp",
+    f"{avg_temp}°C"
 )
 
 c.metric(
-"💧 Avg Humidity",
-f"{avg_hum}%"
+    "💧 Avg Humidity",
+    f"{avg_hum}%"
 )
 
 d.metric(
-"📄 Records",
-len(df)
+    "🏙 Cities",
+    len(df["city"].unique())
+)
+
+e.metric(
+    "🌫 Environmental Index",
+    round(current_aqi, 2)
 )
 
 
@@ -505,10 +505,6 @@ rank=rank.sort_values(
 )
 
 # Insert recommendation block
-latest = (
-    df.sort_values("time")
-    .iloc[-1]
-)
 
 if latest["temperature"] > 40:
     recommendation = "Heat Risk Increasing"
@@ -706,13 +702,20 @@ st.subheader(
 "📈 Trend Analysis"
 )
 
-trend_df = (
-    df
-    if city == "All Cities"
-    else df[
+if city == "All Cities":
+
+    trend_df = (
+        df.groupby("time")
+        [["temperature", "humidity"]]
+        .mean()
+        .reset_index()
+    )
+
+else:
+
+    trend_df = df[
         df["city"] == city
     ]
-)
 
 fig = px.area(
     trend_df.tail(200),

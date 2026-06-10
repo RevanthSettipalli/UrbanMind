@@ -60,14 +60,14 @@ except Exception as e:
     st.error(f"lstm_forecast import failed: {e}")
     lstm_forecast = None
 
-from utils.auth_guard import require_login
-from utils.sidebar import render_sidebar
-from utils.settings import (
+from frontend.utils.auth_guard import require_login
+from frontend.utils.sidebar import render_sidebar
+from frontend.utils.settings import (
     apply_theme,
     load_settings,
     export_data
 )
-from utils.load_weather import load_weather
+from frontend.utils.load_weather import load_weather
 
 
 # =================================

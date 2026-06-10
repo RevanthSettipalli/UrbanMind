@@ -1,8 +1,8 @@
 import streamlit as st
 
-from utils.auth_guard import require_login
-from utils.sidebar import render_sidebar
-from utils.settings import (
+from frontend.utils.auth_guard import require_login
+from frontend.utils.sidebar import render_sidebar
+from frontend.utils.settings import (
     load_settings,
     save_settings,
     apply_theme

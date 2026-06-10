@@ -1,64 +1,62 @@
 import streamlit as st
+from datetime import datetime
 
 
 def render_hero(current_time=None):
-    left, right = st.columns([6, 1])
+    if current_time is None:
+        current_time = datetime.now().strftime('%I:%M:%S %p')
+
+    left, right = st.columns([5, 1])
 
     with left:
-        st.markdown(
-            """
-            <div style="
-            background: linear-gradient(90deg,#001f3f,#0d5c9e);
-            padding:40px;
-            border-radius:30px;
-            color:white;
-            min-height:180px;
-            display:flex;
-            flex-direction:column;
-            justify-content:center;">
-                <h1 style="font-size:64px;margin:0;">🌍 UrbanMind Command Center</h1>
-                <p style="font-size:28px;margin-top:10px;">
-                Real-Time Monitoring • Forecasting • Urban Intelligence
-                </p>
-                <div style="margin-top:14px;font-size:16px;opacity:0.9;">
-                Big Data • AI Forecasting • Real-Time Analytics • Smart Cities
-                </div>
-                </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.markdown("""
+        <div style='
+        background:linear-gradient(135deg,#001428,#003d73,#0d5c9e);
+        padding:28px;
+        border-radius:24px;
+        color:white;
+        box-shadow:0px 10px 25px rgba(0,0,0,0.18);'>
+
+        <div style='font-size:12px;font-weight:700;letter-spacing:2px;opacity:0.85;'>
+        AI-POWERED SMART CITY INTELLIGENCE PLATFORM
+        </div>
+
+        <div style='font-size:48px;font-weight:900;margin-top:10px;'>
+        🌍 UrbanMind
+        </div>
+
+        <div style='font-size:24px;font-weight:600;margin-top:4px;'>
+        National Urban Command Center
+        </div>
+
+        <div style='font-size:14px;opacity:0.9;margin-top:10px;'>
+        Research-Grade Smart City Intelligence, Governance AI & Predictive Analytics Platform
+        </div>
+
+        <div style='margin-top:16px;font-size:15px;'>
+        Real-Time Monitoring • Predictive Analytics • Governance AI • Digital Twin Intelligence
+        </div>
+
+        </div>
+        """, unsafe_allow_html=True)
+
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("📡 Live Data", "ACTIVE")
+        c2.metric("🤖 AI Engine", "ONLINE")
+        c3.metric("🏙 Cities", "10+")
+        c4.metric("🔮 Forecast", "READY")
 
     with right:
-        st.components.v1.html(
-            """
-            <div style="
-            background:#dfe8f5;
-            height:260px;
-            border-radius:22px;
-            display:flex;
-            flex-direction:column;
-            justify-content:center;
-            align-items:center;
-            text-align:center;
-            padding:18px;">
-                <div style="font-size:44px;">🕒</div>
-                <div id="urbanmind-clock" style="font-size:28px;font-weight:800;color:#124f9d;"></div>
-                <div style="font-size:15px;color:#5a6572;">India Standard Time</div>
-                </div>
-            <script>
-            function updateClock(){
-                const now = new Date();
-                const time = now.toLocaleTimeString('en-IN', {
-                    hour:'2-digit',
-                    minute:'2-digit',
-                    second:'2-digit',
-                    hour12:true
-                });
-                document.getElementById('urbanmind-clock').innerHTML = time;
-            }
-            updateClock();
-            setInterval(updateClock,1000);
-            </script>
-            """,
-            height=260,
-        )
+        st.components.v1.html(f"""
+        <div style='background:white;height:220px;border-radius:20px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;box-shadow:0px 6px 18px rgba(0,0,0,0.12);'>
+            <div style='font-size:42px;'>🕒</div>
+            <div style='font-size:28px;font-weight:900;color:#0d5c9e;'>{current_time}</div>
+            <div style='font-size:13px;color:#666;margin-top:6px;'>India Standard Time</div>
+            <div style='font-size:12px;color:#28a745;font-weight:700;margin-top:10px;'>● SYSTEM ONLINE</div>
+            <div style='font-size:11px;color:#666;margin-top:4px;'>National Operations Center</div>
+        </div>
+        """, height=220)
+
+    st.info(
+        "UrbanMind Research Contributions: Urban Readiness Scoring • Governance AI • Predictive Risk Analytics • Digital Twin Intelligence • National Decision Support"
+    )

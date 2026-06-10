@@ -18,12 +18,22 @@ def calculate_risk(
         heat_risk = "LOW"
 
     # Pollution Risk
+    try:
+        aqi_value = float(aqi)
+    except:
+        aqi_value = 0
+
+    if aqi_value <= 5:
+        aqi_component = aqi_value * 20
+    else:
+        aqi_component = aqi_value
+
     pollution_index = (
-        aqi * 20 +
-        pm25 * 0.3 +
-        pm10 * 0.1 +
-        co * 0.01 +
-        no2 * 2
+        aqi_component
+        + pm25 * 0.30
+        + pm10 * 0.10
+        + co * 0.01
+        + no2 * 2
     )
 
     if pollution_index >= 150:
@@ -70,11 +80,24 @@ def calculate_risk(
 
     risk_score = round(risk_score / 3)
 
+    if urban_score < 40:
+        risk_score = max(risk_score, 85)
+    elif urban_score < 60:
+        risk_score = max(risk_score, 65)
+    elif urban_score < 80:
+        risk_score = max(risk_score, 40)
+
     return {
         "heat_risk": heat_risk,
         "pollution_risk": pollution_risk,
         "urban_risk": urban_risk,
-        "risk_score": risk_score
+        "risk_score": risk_score,
+        "emergency_level": (
+            "CRITICAL" if risk_score >= 85 else
+            "HIGH" if risk_score >= 65 else
+            "MODERATE" if risk_score >= 40 else
+            "LOW"
+        )
     }
 if __name__ == "__main__":
 

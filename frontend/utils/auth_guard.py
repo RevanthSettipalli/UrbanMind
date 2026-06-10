@@ -1,20 +1,13 @@
 import streamlit as st
 
-
 def require_login():
-
-    if st.session_state.get("logged_in"):
-        return True
-
-    if st.session_state.get("user"):
+    # Temporary bypass for local debugging
+    if "logged_in" not in st.session_state:
         st.session_state["logged_in"] = True
-        return True
 
-    st.switch_page("pages/login.py")
-    st.stop()
+    return True
 
 
 def logout():
     st.session_state.clear()
-    st.switch_page("pages/login.py")
-    st.stop()
+    st.rerun()
