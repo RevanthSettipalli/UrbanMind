@@ -90,19 +90,31 @@ def load_weather():
     )
 
 
-    # Numeric conversion
+    # Ensure air-quality columns always exist
+    for aq_col in [
+        "aqi",
+        "pm25",
+        "pm10",
+        "co",
+        "no2"
+    ]:
+        if aq_col not in df.columns:
+            df[aq_col] = 0
+
     numeric_cols = [
-    "temperature",
-    "humidity",
-    "aqi",
-    "pm25",
-    "pm10",
-    "co",
-    "no2"
-]
+        "temperature",
+        "humidity",
+        "aqi",
+        "pm25",
+        "pm10",
+        "co",
+        "no2"
+    ]
 
 
     for col in numeric_cols:
+        if col not in df.columns:
+            df[col] = 0
 
         df[col] = pd.to_numeric(
             df[col],
@@ -132,5 +144,9 @@ def load_weather():
     if "time" in df.columns:
         df = df.sort_values("time")
 
+    # Final safety guard for deployment environments
+    for col in ["aqi", "pm25", "pm10", "co", "no2"]:
+        if col not in df.columns:
+            df[col] = 0
 
     return df
