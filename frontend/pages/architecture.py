@@ -1,6 +1,7 @@
 
 
 import streamlit as st
+import plotly.graph_objects as go
 from frontend.utils.auth_guard import require_login
 from frontend.utils.sidebar import render_sidebar
 from frontend.utils.settings import apply_theme
@@ -36,21 +37,6 @@ k2.metric("Platform Modules", "7")
 k3.metric("Architecture Score", "98/100")
 k4.metric("Deployment Ready", "Yes")
 
-st.subheader("🌐 UrbanMind End-to-End Architecture")
-
-c1,c2,c3,c4,c5,c6,c7 = st.columns(7)
-
-c1.info("🌦 Sources")
-c2.info("📡 Kafka")
-c3.info("⚙ Processing")
-c4.info("📊 Analytics")
-c5.info("🔮 Forecast")
-c6.info("📑 Reports")
-c7.success("🏙 Platform")
-
-st.success(
-    "Real-Time Urban Intelligence Pipeline: Sources → Kafka → Processing → Analytics → Forecast → Reports → Decision Support"
-)
 
 
 c1, c2 = st.columns(2)
@@ -128,6 +114,21 @@ tech = {
 
 st.dataframe(tech, use_container_width=True)
 
+st.subheader("🧠 UrbanMind Core Intelligence Engines")
+
+engines = [
+    "Urban Score Engine",
+    "Forecasting Engine",
+    "Explainable AI Engine",
+    "Risk Intelligence Engine",
+    "Governance Simulator",
+    "Smart City Index",
+    "Digital Twin Engine"
+]
+
+for engine in engines:
+    st.success(engine)
+
 st.subheader("🚀 Deployment Architecture")
 
 st.markdown("""
@@ -155,4 +156,66 @@ st.success("Portfolio / Masters Application Readiness: 100%")
 
 st.success(
     "UrbanMind Architecture Ready for Academic Presentation, Industry Demonstration, and Production Deployment."
+)
+# =================================
+# ARCHITECTURE VISUALIZATION
+# =================================
+
+st.success("Architecture module deployed as a research-grade Urban Intelligence pipeline.")
+st.subheader("🏗 UrbanMind Architecture")
+
+architecture_fig = go.Figure()
+
+architecture_fig.add_trace(
+    go.Scatter(
+        x=[1, 2, 3, 4, 5],
+        y=[1, 1, 1, 1, 1],
+        mode="markers+text+lines",
+        text=[
+            "Weather APIs",
+            "Kafka Stream",
+            "Data Lake",
+            "AI Layer",
+            "Digital Twin"
+        ],
+        textposition="top center"
+    )
+)
+
+architecture_fig.update_layout(
+    title="UrbanMind End-to-End Architecture",
+    showlegend=False,
+    height=350
+)
+
+st.plotly_chart(
+    architecture_fig,
+    use_container_width=True
+)
+
+# Add Architecture Layers
+st.markdown("""
+### Architecture Layers
+1. Data Ingestion Layer
+2. Streaming & Storage Layer
+3. AI Intelligence Layer
+4. Forecasting Layer
+5. Digital Twin Layer
+6. Governance Optimization Layer
+7. Executive Decision Dashboard
+""")
+
+st.info(
+    "Weather APIs → Kafka Streaming → Data Lake → Feature Engineering → Forecasting AI → Explainable AI → Governance AI → Digital Twin → Executive Dashboard"
+)
+
+st.subheader("🚀 Architecture Excellence Score")
+
+st.metric(
+    "Architecture Score",
+    "98/100"
+)
+
+st.success(
+    "UrbanMind architecture integrates Streaming, AI Intelligence, Forecasting, Governance Analytics and Digital Twin capabilities."
 )

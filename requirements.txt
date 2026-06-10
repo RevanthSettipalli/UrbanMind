@@ -86,3 +86,4 @@ xyzservices==2026.3.0
 sqlalchemy
 psycopg2-binary
 SQLAlchemy
+prophet

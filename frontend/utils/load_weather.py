@@ -92,9 +92,14 @@ def load_weather():
 
     # Numeric conversion
     numeric_cols = [
-        "temperature",
-        "humidity"
-    ]
+    "temperature",
+    "humidity",
+    "aqi",
+    "pm25",
+    "pm10",
+    "co",
+    "no2"
+]
 
 
     for col in numeric_cols:
