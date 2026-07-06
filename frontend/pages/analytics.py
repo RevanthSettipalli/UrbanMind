@@ -43,30 +43,50 @@ from backend.intelligence.urban_score import (
 # Prophet Forecasting Engine
 
 # Prophet Forecasting Engine
-from backend.intelligence.forecasting_engine import (
-    forecast_30_days
-)
+#
+# Heavy AI modules are imported lazily to avoid page startup hangs
+forecast_30_days = None
+forecast_lstm = None
+calculate_feature_importance = None
 
-# LSTM Forecasting Engine
-from backend.intelligence.lstm_forecasting import (
-    forecast_lstm
-)
-
-# Integrations
-from backend.intelligence.explainable_ai import (
-    calculate_feature_importance
-)
 
 from backend.intelligence.governance_simulator import (
     simulate_policy
 )
+
+from frontend.dashboard_components.governance_ai import render_governance_ai
+from frontend.dashboard_components.sustainability_panel import render_sustainability_panel
+from frontend.dashboard_components.xai_panel import render_xai_panel
+from frontend.dashboard_components.forecasting_panel import render_forecasting_panel
+from frontend.dashboard_components.risk_panel import render_risk_panel
+from frontend.dashboard_components.research_panel import render_research_panel
+from frontend.dashboard_components.digital_twin_panel import render_digital_twin_panel
+
 
 from backend.intelligence.smart_city_index import (
     calculate_national_index,
     generate_city_profile
 )
 
+# ==================================================
+# REFACTOR NOTE
+# This file is now a candidate for modularization.
+# Suggested modules:
+# frontend/components/analytics/header.py
+# frontend/components/analytics/kpi.py
+# frontend/components/analytics/maps.py
+# frontend/components/analytics/forecasting.py
+# frontend/components/analytics/governance.py
+# frontend/components/analytics/research.py
+# ==================================================
 
+@st.cache_data(ttl=300)
+def get_forecast_result_cached(df_input):
+    global forecast_30_days
+    if forecast_30_days is None:
+        from backend.intelligence.forecasting_engine import forecast_30_days as _forecast_30_days
+        forecast_30_days = _forecast_30_days
+    return forecast_30_days(df_input)
 # =================================
 # PAGE
 # =================================
@@ -162,10 +182,9 @@ unsafe_allow_html=True)
 # =================================
 # REFRESH
 # =================================
-
 refresh_rate = max(
-    1,
-    int(settings.get("refresh_rate", 10))
+    60,
+    int(settings.get("refresh_rate", 300))
 )
 
 st_autorefresh(
@@ -178,6 +197,7 @@ st_autorefresh(
 # =================================
 
 df = load_weather()
+print('DEBUG: weather data loaded')
 
 data_age_seconds = 0
 last_dataset_update = "Unavailable"
@@ -369,11 +389,33 @@ predictive_data = predictive_report(
 # PROPHET FORECASTING ENGINE
 # =================================
 
-forecast_result = forecast_30_days(df)
+try:
+    print("STEP 1 - Starting Forecast Engine")
+    print('DEBUG: entering forecast engine')
+    forecast_result = get_forecast_result_cached(df)
+    print("STEP 2 - Forecast Engine Completed")
 
-forecast_df = forecast_result["forecast_df"]
-forecast_confidence = forecast_result["confidence"]
-forecast_model = forecast_result["model"]
+    forecast_df = forecast_result.get(
+        "forecast_df",
+        pd.DataFrame()
+    )
+
+    forecast_confidence = forecast_result.get(
+        "confidence",
+        75
+    )
+
+    forecast_model = forecast_result.get(
+        "model",
+        "Fallback"
+    )
+
+except Exception as e:
+    st.warning(f"Forecast engine unavailable: {e}")
+
+    forecast_df = pd.DataFrame()
+    forecast_confidence = 75
+    forecast_model = "Fallback"
 
 # LSTM Execution
 lstm_result = {
@@ -387,6 +429,20 @@ lstm_rmse = lstm_result.get("rmse", 0)
 lstm_model = lstm_result.get("model", "Unavailable")
 
 
+
+# ==================================================
+# MODULARIZATION STATUS
+# Extracted:
+# 1. Governance AI Panel
+# 2. Sustainability Panel
+# 3. Explainable AI Panel
+# Remaining:
+# - Forecasting Panel
+# - Risk Intelligence Panel
+# - Research Panel
+# - Digital Twin Panel
+# - City Comparison Panel
+# ==================================================
 # =================================
 # HEADER
 # =================================
@@ -726,128 +782,13 @@ st.dataframe(comparison_df, use_container_width=True)
 
 
 # =================================
-# MAP
+# DIGITAL TWIN PANEL (modularized)
 # =================================
-# DIGITAL TWIN
-# ====================================
-
-st.subheader(
-    "🗺 Urban Digital Twin"
-)
-
-CITY = {
-    "Delhi": [28.61, 77.20],
-    "Mumbai": [19.07, 72.87],
-    "Hyderabad": [17.38, 78.48],
-    "Chennai": [13.08, 80.27],
-    "Bangalore": [12.97, 77.59],
-    "Kolkata": [22.57, 88.36],
-    "Vijayawada": [16.50, 80.64],
-    "Pune": [18.52, 73.85],
-    "Ahmedabad": [23.02, 72.57],
-    "Jaipur": [26.91, 75.78]
-}
-
-rank["risk"] = rank.apply(
-    lambda r:
-    "🔥 Heat Risk"
-    if r["temperature"] >= 40
-    else (
-        "🌧 High Humidity"
-        if r["humidity"] >= 80
-        else "✅ Stable"
-    ),
-    axis=1
-)
-
-rank["color"] = rank["score"].apply(
-    lambda x:
-    "green"
-    if x >= 90
-    else (
-        "orange"
-        if x >= 75
-        else "red"
-    )
-)
-
-m = folium.Map(
-    location=[21,79],
-    zoom_start=5,
-    tiles="CartoDB positron"
-)
-
-map_data = rank if city == "All Cities" else rank[
-    rank["city"] == city
-]
-heat_data = []
-
-for _, r in map_data.iterrows():
-
-    city_name = str(r["city"])
-
-    if city_name in CITY:
-        heat_data.append([
-            CITY[city_name][0],
-            CITY[city_name][1],
-            float(r["score"])
-        ])
-
-        rec = (
-            "Heat Risk Increasing"
-            if r["temperature"] > 40
-            else (
-                "High Humidity Alert"
-                if r["humidity"] > 80
-                else "Conditions Stable"
-            )
-        )
-
-        folium.CircleMarker(
-            location=CITY[city_name],
-            radius=18,
-            fill=True,
-            fill_opacity=.9,
-            color=r["color"],
-            fill_color=r["color"],
-            tooltip=city_name,
-            popup=f"""
-🏙 {city_name}
-
-⭐ Score: {r['score']:.0f}
-
-🌡 Temp: {r['temperature']:.1f}°C
-
-💧 Humidity: {r['humidity']:.1f}%
-
-⚠ Recommendation: {rec}
-"""
-        ).add_to(m)
-
-        if city_name == best_city:
-            folium.Marker(
-                CITY[city_name],
-                tooltip="🏆 National Leader"
-            ).add_to(m)
-
-        if city_name == worst_city:
-            folium.Marker(
-                CITY[city_name],
-                tooltip="⚠ Priority Intervention"
-            ).add_to(m)
-
-if heat_data:
-    HeatMap(
-        heat_data,
-        radius=25,
-        blur=20,
-        min_opacity=0.4
-    ).add_to(m)
-
-st_folium(
-    m,
-    height=450,
-    use_container_width=True
+render_digital_twin_panel(
+    rank=rank,
+    selected_city=city,
+    best_city=best_city,
+    worst_city=worst_city
 )
 # =================================
 # NATIONAL SMART CITY INDEX
@@ -960,15 +901,18 @@ if len(df) > 2:
     )
 st.subheader("🚨 Anomaly Detection Dashboard")
 
+print("STEP 3 - Starting Isolation Forest")
+print('DEBUG: entering anomaly detection')
 iso = IsolationForest(
     contamination=0.2,
     random_state=42
 )
-
+print("STEP 4 - Isolation Forest Model Created")
 features = rank[["temperature", "humidity", "score"]]
 
 rank["anomaly"] = iso.fit_predict(features)
 rank["anomaly_score"] = iso.decision_function(features)
+print("STEP 5 - Isolation Forest Completed")
 
 anomalies = rank[
     rank["anomaly"] == -1
@@ -1067,35 +1011,7 @@ s4.metric("💧 Avg Humidity", f"{avg_hum}%")
 
 st.subheader("🌍 SDG Intelligence Layer")
 
-sdg_df = pd.DataFrame({
-    "SDG": [
-        "Clean Air",
-        "Sustainable Cities",
-        "Climate Action",
-        "Innovation"
-    ],
-    "Score": [82, 79, 88, 84]
-})
-
-sdg_fig = px.bar(
-    sdg_df,
-    x="SDG",
-    y="Score",
-    color="Score",
-    title="UN SDG Alignment"
-)
-
-st.plotly_chart(
-    sdg_fig,
-    use_container_width=True
-)
-
-sdg_score = round(sdg_df["Score"].mean(), 1)
-
-s1, s2, s3 = st.columns(3)
-s1.metric("🌱 SDG Alignment", f"{sdg_score}%")
-s2.metric("🏙 Sustainable Cities", "79%")
-s3.metric("🌍 Climate Action", "88%")
+sdg_score = render_sustainability_panel(rank)
 
 st.subheader("🧠 Executive Urban Summary")
 
@@ -1130,106 +1046,13 @@ st.metric(
     f"{urban_intelligence_index}/100"
 )
 st.subheader("🔍 Explainable AI Intelligence")
-
-# SHAP-based Explainable AI Section
-try:
-    import shap
-    from sklearn.ensemble import RandomForestRegressor
-    # Build dataframe for SHAP
-    features = ["temperature", "humidity"]
-    if "aqi" in rank.columns:
-        features.append("aqi")
-    shap_df = rank.copy()
-    # If aqi missing, fill with mean or zeros
-    if "aqi" not in shap_df.columns:
-        shap_df["aqi"] = current_aqi
-    X = shap_df[features]
-    y = shap_df["score"]
-    model = RandomForestRegressor(n_estimators=50, random_state=42)
-    model.fit(X, y)
-    explainer = shap.TreeExplainer(model)
-    shap_values = explainer.shap_values(X)
-    shap_mean = pd.DataFrame({
-        "Feature": features,
-        "Mean |SHAP value|": np.abs(shap_values).mean(axis=0)
-    })
-    shap_fig = px.bar(
-        shap_mean,
-        x="Feature",
-        y="Mean |SHAP value|",
-        color="Mean |SHAP value|",
-        title="Real SHAP Feature Importance"
-    )
-    st.plotly_chart(shap_fig, use_container_width=True)
-    st.caption(
-        "SHAP Explainable AI: Mean absolute SHAP values per feature computed from Random Forest on Urban Score."
-    )
-except Exception:
-    # Fallback to backend explainable AI integration
-    feature_importance = calculate_feature_importance(
-        avg_temp,
-        avg_hum,
-        current_aqi,
-        predictive_data['risk_intelligence']['overall_risk']
-    )
-    impact_df = pd.DataFrame({
-        "Factor": list(feature_importance.keys()),
-        "Impact": list(feature_importance.values())
-    })
-    impact_fig = px.bar(
-        impact_df,
-        x="Factor",
-        y="Impact",
-        color="Impact",
-        title="Urban Score Contribution Analysis"
-    )
-    st.plotly_chart(
-        impact_fig,
-        use_container_width=True
-    )
-    contribution_total = impact_df["Impact"].sum()
-    st.caption(
-        f"Explainable AI generated from Urban Score contribution analysis. Total measurable contribution: {contribution_total}%"
-    )
-
-st.success(
-    f"Why {best_city} ranks #1: balanced environmental indicators, lower risk exposure and stronger predictive intelligence."
+feature_importance, impact_df = render_xai_panel(
+    avg_temp,
+    avg_hum,
+    current_aqi,
+    predictive_data,
+    best_city
 )
-selected_city_xai = st.selectbox(
-    "Select City for Explainability",
-    rank["city"].unique()
-)
-
-if "shap_df" in locals() and "shap_values" in locals():
-
-    city_matches = shap_df[
-        shap_df["city"] == selected_city_xai
-    ]
-
-    if city_matches.empty:
-        st.info("No explainability data available for this city.")
-    else:
-        city_idx = city_matches.index[0]
-        city_shap = pd.DataFrame({
-            "Feature": features,
-            "Contribution": shap_values[city_idx]
-        }).sort_values("Contribution", ascending=False)
-
-        city_fig = px.bar(
-            city_shap,
-            x="Feature",
-            y="Contribution",
-            color="Contribution",
-            title=f"Why {selected_city_xai} Performs This Way"
-        )
-
-        st.plotly_chart(
-            city_fig,
-            use_container_width=True
-        )
-
-else:
-    st.info("City-level SHAP explanations unavailable because SHAP model could not be generated.")
 
 # =================================
 # PREDICTIVE INTELLIGENCE CENTER
@@ -1325,193 +1148,19 @@ p4.metric(
     predictive_data["urban_score_forecast"]
 )
 
-st.subheader("📈 Forecast Intelligence")
-
-# Multi-Target Urban Forecasting section
-if not forecast_df.empty:
-    forecast_plot_df = pd.DataFrame()
-    forecast_plot_df["Date"] = forecast_df["ds"]
-    forecast_plot_df["Temperature"] = forecast_df["yhat"]
-    # Urban Score forecast: trend from current urban
-    forecast_plot_df["Urban Score"] = (
-    urban +
-    (
-        forecast_plot_df["Temperature"]
-        - forecast_plot_df["Temperature"].iloc[0]
-    ) * 0.8
-)
-    # AQI forecast: trend from current_aqi
-    forecast_plot_df["AQI"] = (
-    current_aqi
-    + forecast_plot_df.index * 0.02
-)
-    # Risk forecast: trend from risk intelligence
-    base_risk = predictive_data['risk_intelligence']['overall_risk']
-    forecast_plot_df["Risk"] = [base_risk + (i*0.04) for i in range(len(forecast_plot_df))]
-    # Governance forecast
-    forecast_plot_df["Governance"] = [
-        round(min(100, 70 + urban * 0.25 + i * 0.05), 2)
-        for i in range(len(forecast_plot_df))
-    ]
-    fig_multi = go.Figure()
-    fig_multi.add_trace(go.Scatter(
-        x=forecast_plot_df["Date"], y=forecast_plot_df["Urban Score"], mode="lines", name="Urban Score"
-    ))
-    fig_multi.add_trace(go.Scatter(
-        x=forecast_plot_df["Date"], y=forecast_plot_df["Temperature"], mode="lines", name="Temperature"
-    ))
-    fig_multi.add_trace(go.Scatter(
-        x=forecast_plot_df["Date"], y=forecast_plot_df["AQI"], mode="lines", name="AQI"
-    ))
-    fig_multi.add_trace(go.Scatter(
-        x=forecast_plot_df["Date"], y=forecast_plot_df["Risk"], mode="lines", name="Risk"
-    ))
-    fig_multi.add_trace(go.Scatter(
-        x=forecast_plot_df["Date"],
-        y=forecast_plot_df["Governance"],
-        mode="lines",
-        name="Governance"
-    ))
-    fig_multi.update_layout(title="Multi-Target Urban Forecasting", xaxis_title="Date", yaxis_title="Value")
-    st.plotly_chart(fig_multi, use_container_width=True)
-else:
-    st.info("Forecast data unavailable for multi-target plot.")
-
-st.subheader("🧠 Dual Forecasting Framework")
-
-try:
-    import tensorflow
-    lstm_status = "ACTIVE"
-except Exception:
-    lstm_status = "NOT INSTALLED"
-
-m1, m2, m3, m4 = st.columns(4)
-
-m1.metric("Primary Model", forecast_model)
-m2.metric("LSTM Engine", lstm_status)
-m3.metric("Forecast Confidence", f"{forecast_confidence}%")
-m4.metric("LSTM RMSE", lstm_rmse)
-
-st.subheader("🤖 Urban AI Forecasting Engine")
-
-f1, f2 = st.columns(2)
-
-f1.metric(
-    "Forecast Model",
-    forecast_model
+render_forecasting_panel(
+    forecast_df=forecast_df,
+    forecast_model=forecast_model,
+    forecast_confidence=forecast_confidence,
+    lstm_forecast=lstm_forecast,
+    lstm_rmse=lstm_rmse,
+    urban=urban,
+    current_aqi=current_aqi,
+    predictive_data=predictive_data
 )
 
-f2.metric(
-    "Confidence",
-    f"{forecast_confidence}%"
-)
-
-if not forecast_df.empty:
-
-    forecast_chart = px.line(
-        forecast_df,
-        x="ds",
-        y="yhat",
-        title="30-Day Prophet Forecast"
-    )
-
-    st.plotly_chart(
-        forecast_chart,
-        use_container_width=True
-    )
-    if len(lstm_forecast) >= len(forecast_df):
-        lstm_values = lstm_forecast[:len(forecast_df)]
-    else:
-        lstm_values = list(forecast_df["yhat"][:len(forecast_df)])
-
-    comparison_df = pd.DataFrame({
-        "Date": forecast_df["ds"],
-        "Prophet": forecast_df["yhat"],
-        "LSTM": lstm_values
-    })
-
-    comparison_fig = px.line(
-        comparison_df,
-        x="Date",
-        y=["Prophet", "LSTM"],
-        title="Forecast Model Comparison"
-    )
-
-    st.plotly_chart(
-        comparison_fig,
-        use_container_width=True
-    )
-
-    if (
-        "yhat_lower" in forecast_df.columns
-        and "yhat_upper" in forecast_df.columns
-    ):
-
-        band_fig = go.Figure()
-
-        band_fig.add_trace(
-            go.Scatter(
-                x=forecast_df["ds"],
-                y=forecast_df["yhat"],
-                name="Forecast"
-            )
-        )
-
-        band_fig.add_trace(
-            go.Scatter(
-                x=forecast_df["ds"],
-                y=forecast_df["yhat_upper"],
-                line=dict(width=0),
-                showlegend=False
-            )
-        )
-
-        band_fig.add_trace(
-            go.Scatter(
-                x=forecast_df["ds"],
-                y=forecast_df["yhat_lower"],
-                fill="tonexty",
-                line=dict(width=0),
-                name="Confidence Band"
-            )
-        )
-
-        band_fig.update_layout(
-            title="Forecast Confidence Interval"
-        )
-
-        st.plotly_chart(
-            band_fig,
-            use_container_width=True
-        )
-
-else:
-
-    st.warning(
-        "Forecast model could not generate predictions."
-    )
-
-st.subheader("🏙 Urban Risk Intelligence")
-
-risk = predictive_data["risk_intelligence"]
-
-r1, r2, r3, r4, r5 = st.columns(5)
-
-r1.metric("Infrastructure", risk["infrastructure_risk"])
-r2.metric("Pollution", risk["pollution_risk"])
-r3.metric("Traffic", risk["traffic_risk"])
-r4.metric("Weather", risk["weather_risk"])
-r5.metric("Overall", risk["overall_risk"])
-
-st.subheader("⚡ Resource Demand Forecast")
-
-resource_df = pd.DataFrame([
-    predictive_data["resource_demand"]
-])
-
-st.dataframe(
-    resource_df,
-    use_container_width=True
+render_risk_panel(
+    predictive_data=predictive_data
 )
 
 st.subheader("📋 Executive Recommendations")
@@ -1519,169 +1168,20 @@ st.subheader("📋 Executive Recommendations")
 for recommendation in predictive_data["recommendations"]:
     st.info(recommendation)
 
+
+    # Governance module successfully extracted.
+    # Next target modules:
+    # forecasting_panel.py
+    # risk_panel.py
+    # research_panel.py
+    # digital_twin_panel.py
 # =================================
 # GOVERNANCE DECISION SIMULATOR
 # =================================
-st.subheader("🏛 Governance Decision Simulator")
-
-policy_gain = st.slider(
-    "Governance Improvement (%)",
-    0,
-    30,
-    10
+render_governance_ai(
+    df=df,
+    ranking_df=rank
 )
-
-simulated_score = round(
-    min(100, urban + policy_gain * 0.6),
-    1
-)
-
-sim1, sim2 = st.columns(2)
-
-sim1.metric(
-    "Current Urban Score",
-    urban
-)
-
-sim2.metric(
-    "Simulated Score",
-    simulated_score,
-    delta=round(simulated_score - urban, 1)
-)
-
-st.info(
-    f"Policy intervention could improve Urban Intelligence from {urban} to {simulated_score}."
-)
-
-# Real Governance Policy Engine
-policy_budget = st.slider(
-    'Policy Investment (Million ₹)',
-    0,
-    500,
-    100,
-    key='policy_budget'
-)
-
-# DIGITAL TWIN SCENARIO SIMULATOR
-st.subheader("🌍 Digital Twin Scenario Simulator")
-
-pollution_cut = st.slider(
-    "Pollution Reduction (%)",
-    0,
-    50,
-    10,
-    key="pollution_cut"
-)
-
-traffic_cut = st.slider(
-    "Traffic Reduction (%)",
-    0,
-    50,
-    10,
-    key="traffic_cut"
-)
-
-green_increase = st.slider(
-    "Green Space Increase (%)",
-    0,
-    50,
-    10,
-    key="green_increase"
-)
-
-simulation = simulate_policy(
-    pollution_cut,
-    traffic_cut,
-    green_increase,
-    policy_budget
-)
-
-# Add: Scipy optimization engine for governance
-try:
-    from scipy.optimize import minimize
-    def objective(x):
-        # x = [pollution_cut, traffic_cut, green_increase]
-        sim = simulate_policy(
-            x[0], x[1], x[2], policy_budget
-        )
-        # maximize future_score (minimize negative)
-        return -sim["future_score"]
-    # Constraints: investment sum <= budget, variables between 0 and 50
-    bounds = [(0, 50), (0, 50), (0, 50)]
-    x0 = [pollution_cut, traffic_cut, green_increase]
-    result = minimize(objective, x0, bounds=bounds, method="L-BFGS-B")
-    opt_pollution, opt_traffic, opt_green = result.x
-    opt_sim = simulate_policy(opt_pollution, opt_traffic, opt_green, policy_budget)
-    st.metric("Optimal Policy Score", round(opt_sim["future_score"], 2))
-    st.metric("Optimal Investment Allocation", f"Pollution: {opt_pollution:.1f}%, Traffic: {opt_traffic:.1f}%, Green: {opt_green:.1f}%")
-except Exception:
-    pass
-
-st.metric(
-    "Future Smart City Score",
-    simulation["future_score"],
-    delta=simulation["policy_gain"]
-)
-
-st.metric(
-    "Governance Policy ROI",
-    f"{simulation['roi']}%"
-)
-
-st.info(simulation["recommendation"])
-
-# Digital Twin Scenario Comparison Bar Chart
-scenario_df = pd.DataFrame({
-    "Scenario": [
-        "Current",
-        "Pollution Policy",
-        "Traffic Policy",
-        "Green Policy",
-        "Combined"
-    ],
-    "Score": [
-        urban,
-        urban + pollution_cut * 0.2,
-        urban + traffic_cut * 0.15,
-        urban + green_increase * 0.25,
-        simulation["future_score"]
-    ]
-})
-
-scenario_fig = px.bar(
-    scenario_df,
-    x="Scenario",
-    y="Score",
-    color="Score",
-    title="Digital Twin Scenario Comparison"
-)
-
-st.plotly_chart(scenario_fig, use_container_width=True)
-
-scenario_time = pd.DataFrame({
-    "Year": [2026, 2027, 2028, 2029, 2030],
-    "Current": [urban, urban+1, urban+2, urban+3, urban+4],
-    "Policy": [
-        simulation["future_score"],
-        simulation["future_score"]+2,
-        simulation["future_score"]+4,
-        simulation["future_score"]+6,
-        simulation["future_score"]+8
-    ]
-})
-
-projection_fig = px.line(
-    scenario_time,
-    x="Year",
-    y=["Current", "Policy"],
-    title="Digital Twin Long-Term Scenario Projection"
-)
-
-st.plotly_chart(
-    projection_fig,
-    use_container_width=True
-)
-
 # =================================
 # CITY COMPARISON ENGINE
 # =================================
@@ -1746,38 +1246,6 @@ if len(compare_cities) >= 2:
     winner = city_a if float(compare_df.iloc[0]["score"]) >= float(compare_df.iloc[1]["score"]) else city_b
     st.success(f"🏆 Comparison Winner: {winner}")
 
-# =================================
-# RISK VISUALIZATION
-# =================================
-
-st.subheader("📡 Urban Risk Distribution")
-
-risk_chart_df = pd.DataFrame({
-    "Risk": [
-        "Infrastructure",
-        "Pollution",
-        "Traffic",
-        "Weather"
-    ],
-    "Value": [
-        risk["infrastructure_risk"],
-        risk["pollution_risk"],
-        risk["traffic_risk"],
-        risk["weather_risk"]
-    ]
-})
-
-risk_fig = px.line_polar(
-    risk_chart_df,
-    r="Value",
-    theta="Risk",
-    line_close=True
-)
-
-st.plotly_chart(
-    risk_fig,
-    use_container_width=True
-)
 
 
 # =================================
@@ -1819,160 +1287,16 @@ r5.metric("Governance", "ACTIVE")
 # =================================
 # RESEARCH FINDINGS
 # =================================
-st.subheader("🎓 Research Publication Highlights")
-
-st.success(
-    "UrbanMind contributes to Digital Twin Intelligence, Explainable AI, Predictive Urban Analytics, Governance Intelligence and SDG-driven Smart City Assessment."
+render_research_panel(
+    best_city=best_city,
+    worst_city=worst_city,
+    urban=urban,
+    urban_intelligence_index=urban_intelligence_index,
+    forecast_confidence=forecast_confidence,
+    sdg_score=sdg_score,
+    risk=predictive_data["risk_intelligence"],
+    intel=intel
 )
-
-research_df = pd.DataFrame({
-    "Research Area": [
-        "Digital Twin",
-        "Explainable AI",
-        "Predictive Analytics",
-        "Governance AI",
-        "SDG Intelligence"
-    ],
-    "Impact": [95, 92, 94, 90, 91]
-})
-
-research_fig = px.bar(
-    research_df,
-    x="Research Area",
-    y="Impact",
-    color="Impact",
-    title="Research Contribution Index"
-)
-
-st.plotly_chart(
-    research_fig,
-    use_container_width=True
-)
-
-st.subheader("📚 Research Findings")
-
-findings = [
-    f"{best_city} currently leads national urban readiness.",
-    f"{worst_city} requires priority intervention.",
-    f"Average urban intelligence score is {urban}.",
-    f"Forecast confidence remains {intel['confidence']}%.",
-    "Digital Twin monitoring is operational across all monitored cities."
-]
-
-for finding in findings:
-    st.success(finding)
-
-# =================================
-# RESEARCH PUBLICATION MODE
-# =================================
-
-st.subheader("📄 Research Publication Mode")
-
-research_report = f"""
-ABSTRACT
-UrbanMind is an AI-driven Smart City Intelligence Platform integrating Digital Twins, Explainable AI, SDG Intelligence, Governance Analytics and Predictive Forecasting.
-
-METHODOLOGY
-Real-time environmental data was analysed using urban scoring, clustering, forecasting and risk intelligence models.
-
-RESULTS
-Best City: {best_city}
-Priority City: {worst_city}
-Urban Intelligence Index: {urban_intelligence_index}
-
-FINDINGS
-Forecast confidence reached {intel['confidence']}% and Digital Twin monitoring remained active.
-
-FUTURE WORK
-Integration of IoT streams, satellite imagery, traffic intelligence and multimodal urban AI.
-"""
-
-# PDF Report Helper
-@st.cache_data
-def generate_research_pdf(report_text):
-    pdf_path = ROOT / "urbanmind_research_report.pdf"
-    doc = SimpleDocTemplate(str(pdf_path))
-    styles = getSampleStyleSheet()
-
-    story = [
-        Paragraph("UrbanMind Research Report", styles['Title']),
-        Spacer(1, 12),
-
-        Paragraph("Abstract", styles['Heading2']),
-        Paragraph(
-            "UrbanMind is an AI-driven Smart City Intelligence Platform integrating Explainable AI, Digital Twin Intelligence, Governance Analytics, SDG Intelligence and Predictive Forecasting.",
-            styles['BodyText']
-        ),
-        Spacer(1, 10),
-
-        Paragraph("Methodology", styles['Heading2']),
-        Paragraph(
-            "The platform analyses environmental and urban indicators using Urban Scoring, Smart City Clustering, SHAP Explainability, Forecasting Models, Risk Intelligence and Governance Optimization.",
-            styles['BodyText']
-        ),
-        Spacer(1, 10),
-
-        Paragraph("Results", styles['Heading2']),
-        Paragraph(
-            report_text.replace("\n", "<br/>"),
-            styles['BodyText']
-        ),
-        Spacer(1, 10),
-
-        Paragraph("Findings", styles['Heading2']),
-        Paragraph(
-            "UrbanMind identified leading and high-risk cities, generated predictive intelligence scores, governance recommendations and Digital Twin simulations for future planning.",
-            styles['BodyText']
-        ),
-        Spacer(1, 10),
-
-        Paragraph("Future Work", styles['Heading2']),
-        Paragraph(
-            "Future enhancements include LSTM forecasting, IoT integration, satellite imagery analytics, multimodal urban intelligence and policy optimization engines.",
-            styles['BodyText']
-        )
-    ]
-
-    doc.build(story)
-
-    with open(pdf_path, "rb") as f:
-        return f.read()
-
-st.text_area(
-    "Research Paper Draft",
-    research_report,
-    height=300
-)
-
-pdf_bytes = generate_research_pdf(research_report)
-
-st.download_button(
-    "📥 Download Research Report PDF",
-    pdf_bytes,
-    file_name="urbanmind_research_report.pdf",
-    mime="application/pdf"
-)
-
-st.subheader("📖 Research Methodology")
-
-st.markdown("""
-### Data Sources
-- OpenWeather Environmental Streams
-- Air Quality Indicators
-- Real-Time Smart City Monitoring
-
-### AI Models
-- Urban Score Engine
-- Predictive Analytics Engine
-- Risk Intelligence Engine
-- Governance Recommendation AI
-
-### Research Contributions
-- Explainable AI
-- Digital Twin Simulation
-- Predictive Urban Intelligence
-- Governance Decision Support
-""")
 
 # =================================
 # EXPORT
@@ -2041,7 +1365,10 @@ research_score = round(
         forecast_confidence
         + sdg_score
         + urban_intelligence_index
-        + (100 - risk["overall_risk"])
+        + (
+            100
+            - predictive_data["risk_intelligence"]["overall_risk"]
+        )
     ) / 4,
     1
 )

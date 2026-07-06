@@ -2,15 +2,15 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-
-
 def render_governance_ai(
     df,
     ranking_df
 ):
+    city_col = "city" if "city" in ranking_df.columns else "City"
+    score_col = "score" if "score" in ranking_df.columns else "Score"
 
     avg_score = round(
-        float(ranking_df["Score"].mean()),
+        float(ranking_df[score_col].mean()),
         1
     )
 
@@ -18,8 +18,8 @@ def render_governance_ai(
 
     national_intelligence = round(avg_score * 1.05, 1)
 
-    best_city_name = ranking_df.iloc[0]["City"]
-    worst_city_name = ranking_df.iloc[-1]["City"]
+    best_city_name = ranking_df.iloc[0][city_col]
+    worst_city_name = ranking_df.iloc[-1][city_col]
 
     governance_status = "ACTIVE"
 
@@ -140,8 +140,8 @@ Average Humidity: {avg_humidity}%
 
     score_chart = px.bar(
         ranking_df.head(10),
-        x="City",
-        y="Score",
+        x=city_col,
+        y=score_col,
         title="National Governance Performance"
     )
 

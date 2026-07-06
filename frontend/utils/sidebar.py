@@ -193,30 +193,26 @@ unsafe_allow_html=True
 )
 
         pages = [
-            ("📊 Dashboard", "dashboard"),
-            ("📈 Analytics", "analytics"),
-            ("🔮 Forecast", "forecast"),
-            ("🌍 Geo", "geo"),
-            ("🖥 Monitor", "monitor"),
-            ("🏥 System Health", "system_health"),
-            ("🏗 Architecture", "architecture"),
-            ("🤖 Assistant", "assistant"),
-            ("📑 Reports", "reports"),
-            ("⚙️ Settings", "settings"),
-            ("ℹ️ About", "about")
-        ]
+    ("📊 Dashboard", "pages/dashboard.py"),
+    ("📈 Analytics", "pages/analytics.py"),
+    ("🔮 Forecast", "pages/forecast.py"),
+    ("🌍 Geo", "pages/geo.py"),
+    ("🖥 Monitor", "pages/monitor.py"),
+    ("🏥 System Health", "pages/system_health.py"),
+    ("🏗 Architecture", "pages/architecture.py"),
+    ("🤖 Assistant", "pages/assistant.py"),
+    ("📑 Reports", "pages/reports.py"),
+    ("⚙️ Settings", "pages/settings.py"),
+    ("ℹ️ About", "pages/about.py")
+]
 
         for title, page in pages:
-
             if st.button(
                 title,
                 key=f"nav_{page}",
                 use_container_width=True
             ):
-
-                st.switch_page(
-                    f"pages/{page}.py"
-                )
+                st.switch_page(page)
 
         st.markdown(
 '<div class="logout">',
